@@ -39,28 +39,6 @@
   100% { opacity: 0; --angle: 360deg; }
 }
 
-/* Teal variant using accent color */
-.neon-ring-teal {
-  position: relative;
-  border-radius: 1rem; /* match rounded-2xl */
-  --angle: 0deg;
-}
-.neon-ring-teal::after {
-  content: "";
-  position: absolute;
-  inset: -2px; /* slightly outside to sit on border */
-  padding: 2px;
-  border-radius: inherit;
-  background: conic-gradient(from var(--angle), hsl(var(--accent)) 0%, hsl(var(--accent)/0.3) 35%, hsl(var(--accent)) 70%, hsl(var(--accent)/0.3) 100%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px hsl(var(--accent))) drop-shadow(0 0 12px hsl(var(--accent)/0.5));
-}
 
 :root {
   /* Light theme colors - Custom Brand Colors */
@@ -143,4 +121,19 @@ body {
 @keyframes accordion-up {
   from { height: var(--radix-accordion-content-height); }
   to { height: 0; }
+}
+
+/* Hover neon glow and 3D pop */
+.neon-ring:hover::after {
+  opacity: 0.22;
+}
+
+.neon-pop-3d {
+  will-change: transform, box-shadow;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform 180ms cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 180ms ease;
+}
+.neon-pop-3d:hover {
+  transform: translateZ(0) scale(1.03);
 }

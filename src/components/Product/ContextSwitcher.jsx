@@ -26,13 +26,9 @@ export function ContextSwitcher({
   className 
 }) {
   const contexts = ['residential', 'retail'];
-  const [animatedContext, setAnimatedContext] = useState(null);
-  const [loopContext, setLoopContext] = useState(null);
-  const timerRef = useRef(null);
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   return (
-    <div className={`rounded-3xl border border-primary/20 shadow-sm p-6 ${className || ''}`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))' }}>
+    <div className={`rounded-3xl overflow-hidden border border-primary/20 shadow-sm p-6 ${className || ''}`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))', borderRadius: '28px' }}>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />
@@ -47,30 +43,18 @@ export function ContextSwitcher({
             return (
               <button
                 key={context}
-                onClick={() => {
-                  if (context !== currentContext) {
-                    onContextChange(context);
-                    // One-shot teal sweep on newly selected button
-                    setAnimatedContext(context);
-                    if (timerRef.current) clearTimeout(timerRef.current);
-                    timerRef.current = setTimeout(() => setAnimatedContext(null), 1150);
-                    // Clear any loop
-                    setLoopContext(null);
-                  } else {
-                    // Click on already active button: run teal sweep continuously
-                    setLoopContext((prev) => (prev === context ? null : context));
-                  }
-                }}
-                className={`group neon-ring-teal ${animatedContext === context ? 'neon-animate-once' : ''} ${loopContext === context ? 'neon-animate-loop' : ''} relative h-28 w-44 rounded-2xl px-5 py-4 flex items-center justify-center gap-3
+                onClick={() => onContextChange(context)}
+                className={`group neon-pop-3d relative h-28 w-44 rounded-full px-5 py-4 flex items-center justify-center gap-3
                   transition-all duration-300 ease-out
                   ${isActive ? 'translate-y-0' : 'translate-y-[2px]'}
-                  ${isActive ? 'shadow-[0_10px_30px_-10px_rgba(233,30,99,0.6),inset_0_-4px_0_rgba(0,0,0,0.2)]' : 'shadow-[0_8px_20px_-10px_rgba(233,30,99,0.25),inset_0_-2px_0_rgba(233,30,99,0.15)]'}
+                  ${isActive ? 'shadow-[0_14px_40px_-12px_rgba(20,184,166,0.45),inset_0_-4px_0_rgba(0,0,0,0.2)]' : 'shadow-[0_10px_28px_-12px_rgba(20,184,166,0.25),inset_0_-2px_0_rgba(233,30,99,0.15)]'}
                   ${isActive ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/10 text-foreground'}
-                  hover:translate-y-[-2px] hover:ring-2 hover:ring-accent/40 hover:rounded-2xl
+                  hover:translate-y-[-3px] hover:rounded-full hover:shadow-[0_22px_52px_-18px_rgba(20,184,166,0.55)]
                   active:translate-y-[1px] active:shadow-[inset_0_4px_10px_rgba(0,0,0,0.2)]
                   border border-primary/30
                 `}
                 style={{
+                  borderRadius: '9999px',
                   backgroundImage: isActive
                     ? 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 60%, hsl(var(--primary)/0.85) 100%)'
                     : 'linear-gradient(135deg, hsl(var(--primary)/0.12) 0%, hsl(var(--secondary)/0.12) 100%)'
@@ -79,17 +63,17 @@ export function ContextSwitcher({
                 {/* Left label + icon for Residential, right icon + label for Retail */}
                 {context === 'residential' ? (
                   <>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground drop-shadow-sm' : 'text-foreground'}`}>{contextLabels[context]}</span>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
+                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
+                    <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
                       <Icon className="w-6 h-6" />
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
+                    <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground drop-shadow-sm' : 'text-foreground'}`}>{contextLabels[context]}</span>
+                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
                   </>
                 )}
                 {/* Hover ring respects rounded corners via Tailwind ring and rounded-2xl */}
