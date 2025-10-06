@@ -137,3 +137,18 @@ body {
 .neon-pop-3d:hover {
   transform: translateZ(0) scale(1.03);
 }
+
+/* Modal surface contrast rules */
+.modal-surface {
+  color: white;
+}
+/* Any white background inside the modal uses black text for legibility */
+.modal-surface [class*="bg-white"],
+.modal-surface .bg-white,
+.modal-surface .bg-background,
+.modal-surface [style*="background-color: white"],
+.modal-surface [style*="background: white"],
+.modal-surface .card,
+.modal-surface .sheet {
+  color: black;
+}
