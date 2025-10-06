@@ -1,5 +1,6 @@
 import { Button } from '../../shared/ui/button';
 import { Badge } from '../../shared/ui/badge';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../../shared/ui/accordion';
 import { useEffect, useRef, useState } from 'react';
 import { Settings, Home, Store } from 'lucide-react';
 
@@ -26,11 +27,12 @@ export function ContextSwitcher({
 }) {
   const contexts = ['residential', 'retail'];
   const [animatedContext, setAnimatedContext] = useState(null);
+  const [loopContext, setLoopContext] = useState(null);
   const timerRef = useRef(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   return (
-    <div className={`rounded-2xl p-6 ${className || ''}`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))' }}>
+    <div className={`rounded-3xl border border-primary/20 shadow-sm p-6 ${className || ''}`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))' }}>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />
@@ -45,23 +47,26 @@ export function ContextSwitcher({
             return (
               <button
                 key={context}
-                onClick={(e) => {
+                onClick={() => {
                   if (context !== currentContext) {
                     onContextChange(context);
-                    // Persist animation class via state for ~1.1s
+                    // One-shot teal sweep on newly selected button
                     setAnimatedContext(context);
                     if (timerRef.current) clearTimeout(timerRef.current);
                     timerRef.current = setTimeout(() => setAnimatedContext(null), 1150);
+                    // Clear any loop
+                    setLoopContext(null);
                   } else {
-                    onContextChange(context);
+                    // Click on already active button: run teal sweep continuously
+                    setLoopContext((prev) => (prev === context ? null : context));
                   }
                 }}
-                className={`group neon-ring ${animatedContext === context ? 'neon-animate' : ''} relative h-28 w-44 rounded-2xl px-5 py-4 flex items-center justify-center gap-3
+                className={`group neon-ring-teal ${animatedContext === context ? 'neon-animate-once' : ''} ${loopContext === context ? 'neon-animate-loop' : ''} relative h-28 w-44 rounded-2xl px-5 py-4 flex items-center justify-center gap-3
                   transition-all duration-300 ease-out
                   ${isActive ? 'translate-y-0' : 'translate-y-[2px]'}
                   ${isActive ? 'shadow-[0_10px_30px_-10px_rgba(233,30,99,0.6),inset_0_-4px_0_rgba(0,0,0,0.2)]' : 'shadow-[0_8px_20px_-10px_rgba(233,30,99,0.25),inset_0_-2px_0_rgba(233,30,99,0.15)]'}
                   ${isActive ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/10 text-foreground'}
-                  hover:translate-y-[-2px] hover:ring-2 hover:ring-primary/40 hover:rounded-2xl
+                  hover:translate-y-[-2px] hover:ring-2 hover:ring-accent/40 hover:rounded-2xl
                   active:translate-y-[1px] active:shadow-[inset_0_4px_10px_rgba(0,0,0,0.2)]
                   border border-primary/30
                 `}
@@ -104,19 +109,24 @@ export function ContextSwitcher({
           </div>
         </div>
 
-        <details className="text-sm">
-          <summary className="cursor-pointer text-primary font-medium hover:underline">
-            What could change this price?
-          </summary>
-          <div className="mt-2 text-muted-foreground space-y-1">
-            <p>• Long cable runs beyond included meters</p>
-            <p>• Conduit installation in commercial properties</p>
-            <p>• Heritage building or access restrictions</p>
-            <p>• Roof type and accessibility challenges</p>
-            <p>• Local council requirements</p>
-            <p>• Site-specific installation complexity</p>
-          </div>
-        </details>
+        {/* Teal gradient accordion for price factors */}
+        <Accordion type="single" collapsible className="rounded-2xl overflow-hidden">
+          <AccordionItem value="price-factors" className="border-none">
+            <AccordionTrigger className="px-4 py-3 bg-gradient-to-r from-accent/15 via-accent/20 to-accent/15 text-accent rounded-2xl hover:no-underline">
+              <span className="font-medium">What could change this price?</span>
+            </AccordionTrigger>
+            <AccordionContent className="bg-gradient-to-br from-accent/10 via-accent/15 to-accent/10 rounded-b-2xl">
+              <div className="mt-2 text-sm text-muted-foreground space-y-1 px-4">
+                <p>• Long cable runs beyond included meters</p>
+                <p>• Conduit installation in commercial properties</p>
+                <p>• Heritage building or access restrictions</p>
+                <p>• Roof type and accessibility challenges</p>
+                <p>• Local council requirements</p>
+                <p>• Site-specific installation complexity</p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   );
