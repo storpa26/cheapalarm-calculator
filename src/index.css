@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light theme colors - Custom Brand Colors */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 1%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 1%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 1%;
+  --primary: 342 55% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 188 68% 37%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 60 1% 51%;
+  --muted-foreground: 0 0% 1%;
+  --accent: 188 68% 37%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 1% 51%;
+  --input: 60 1% 51%;
+  --ring: 342 55% 55%;
+  --radius: 0.5rem;
+  
+  /* Font settings */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark {
+  --background: 0 0% 1%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 1%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 1%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 320 100% 70%;
+  --primary-foreground: 0 0% 1%;
+  --secondary: 188 100% 58%;
+  --secondary-foreground: 0 0% 1%;
+  --muted: 188 100% 20%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 188 100% 58%;
+  --accent-foreground: 0 0% 1%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 1% 30%;
+  --input: 60 1% 30%;
+  --ring: 320 100% 70%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
