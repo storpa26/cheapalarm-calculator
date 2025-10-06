@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { ProductTypeToggle } from '../components/Product/ProductTypeToggle';
 import { ContextSwitcher } from '../components/Product/ContextSwitcher';
 import { AddOnsSection } from '../components/Product/AddOnsSection';
 import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
@@ -77,23 +76,7 @@ export default function AlarmPage() {
 
       {/* Main Content */}
       <main className="pb-24">
-        {/* Product Type Selection */}
-        <section className="py-8 px-4 bg-muted/30">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-4">Choose Your System Type</h2>
-              <p className="text-muted-foreground">
-                Select between wireless or hardwired alarm systems
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <ProductTypeToggle 
-                value={productType} 
-                onChange={setProductType} 
-              />
-            </div>
-          </div>
-        </section>
+        {/* Product Type Selection removed per request (quiz will decide later) */}
 
         {/* Context Selection */}
         <section className="py-8 px-4">
@@ -106,8 +89,8 @@ export default function AlarmPage() {
             </div>
             <div className="flex justify-center">
               <ContextSwitcher 
-                value={context} 
-                onChange={setContext} 
+                currentContext={context} 
+                onContextChange={setContext} 
               />
             </div>
           </div>

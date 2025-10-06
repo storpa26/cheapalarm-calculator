@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Neon ring effect for active property buttons */
+.neon-ring {
+  position: relative;
+  border-radius: 1rem; /* match rounded-2xl */
+  --angle: 0deg;
+}
+.neon-ring::after {
+  content: "";
+  position: absolute;
+  inset: -2px; /* slightly outside to sit on border */
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--angle), hsl(var(--primary)) 0%, hsl(var(--primary)/0.3) 35%, hsl(var(--primary)) 70%, hsl(var(--primary)/0.3) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px hsl(var(--primary))) drop-shadow(0 0 12px hsl(var(--primary)/0.5));
+}
+.neon-animate::after {
+  animation: neon-sweep 1100ms linear 1;
+}
+@keyframes neon-sweep {
+  0% { opacity: 1; --angle: 0deg; }
+  90% { opacity: 1; --angle: 360deg; }
+  100% { opacity: 0; --angle: 360deg; }
+}
+
 :root {
   /* Light theme colors - Custom Brand Colors */
   --background: 0 0% 100%;
