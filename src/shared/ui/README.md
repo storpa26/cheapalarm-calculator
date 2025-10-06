@@ -1,0 +1,1 @@
+Shared UI components and primitives (buttons, dialog, inputs, tabs, etc.).

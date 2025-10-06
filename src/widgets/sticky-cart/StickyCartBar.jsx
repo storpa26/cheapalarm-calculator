@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button } from '../UI/button';
-import { Badge } from '../UI/badge';
+import { Button } from '../../shared/ui/button';
+import { Badge } from '../../shared/ui/badge';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 
 // Simple currency formatter

@@ -1,6 +1,6 @@
-import { Progress } from '../UI/progress';
-import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
-import { Badge } from '../UI/badge';
+import { Progress } from '../../shared/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Badge } from '../../shared/ui/badge';
 import { AlertTriangle, Info, XCircle } from 'lucide-react';
 
 export function CapacityMeter({ limits, violations, className }) {

@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
-import { Button } from '../UI/button';
-import { Badge } from '../UI/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Button } from '../../shared/ui/button';
+import { Badge } from '../../shared/ui/badge';
 import { Plus, Calculator, AlertCircle, Loader2, ShoppingCart } from 'lucide-react';
-import { AddonCard } from './AddonCard';
-import { AddonModal } from './AddonModal';
-import { CapacityMeter } from './CapacityMeter';
+import { AddonCard } from '../../features/addons/components/AddonCard';
+import { AddonModal } from '../../features/addons/components/AddonModal';
+import { CapacityMeter } from '../../widgets/capacity-meter/CapacityMeter';
 import { addons as staticAddons } from '../../data/addons';
 import { assumptions } from '../../data/assumptions';
 import { RulesEngine } from '../../lib/rules';
-import { formatCurrency } from '../../lib/quote';
-import { wooApi } from '../../lib/api';
+import { formatCurrency } from '../../shared/lib/quote';
+import { wooApi } from '../../shared/api/api';
 import { useToast } from '../../hooks/use-toast';
 
 export function AddOnsSection({

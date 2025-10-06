@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../UI/dialog';
-import { Button } from '../UI/button';
-import { Badge } from '../UI/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../UI/tabs';
-import { Switch } from '../UI/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../shared/ui/dialog';
+import { Button } from '../../../shared/ui/button';
+import { Badge } from '../../../shared/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui/tabs';
+import { Switch } from '../../../shared/ui/switch';
 import { Minus, Plus, CheckCircle2, Package, Play, HelpCircle, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '../../lib/quote';
+import { formatCurrency } from '../../../shared/lib/quote';
 
 export function AddonModal({ 
   addon, 

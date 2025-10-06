@@ -3,7 +3,7 @@ import { ProductTypeToggle } from '../components/Product/ProductTypeToggle';
 import { ContextSwitcher } from '../components/Product/ContextSwitcher';
 import { AddOnsSection } from '../components/Product/AddOnsSection';
 import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
-import { StickyCartBar } from '../components/Product/StickyCartBar';
+import { StickyCartBar } from '../widgets/sticky-cart/StickyCartBar';
 
 export default function AlarmPage() {
   const [productType, setProductType] = useState('wireless');
@@ -158,7 +158,7 @@ export default function AlarmPage() {
       <StickyCartBar
         selectedAddons={selectedAddons}
         estimatedTotal={estimatedTotal}
-        onAddToQuote={handleAddToQuote}
+        onAddToCart={handleAddToQuote}
         context={context}
         productType={productType}
       />

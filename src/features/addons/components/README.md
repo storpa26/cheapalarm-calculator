@@ -1,0 +1,1 @@
+This folder contains add-on related components migrated from Product.

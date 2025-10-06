@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
-import { Button } from '../UI/button';
-import { Input } from '../UI/input';
-import { Alert, AlertDescription } from '../UI/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
+import { Button } from '../../shared/ui/button';
+import { Input } from '../../shared/ui/input';
+import { Alert, AlertDescription } from '../../shared/ui/alert';
 import { ShoppingCart, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from 'lucide-react';
 
 export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext }) {

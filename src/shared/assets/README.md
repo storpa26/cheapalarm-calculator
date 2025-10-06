@@ -1,0 +1,1 @@
+Shared static assets used app-wide.

@@ -1,5 +1,5 @@
-import { Button } from '../UI/button';
-import { Badge } from '../UI/badge';
+import { Button } from '../../shared/ui/button';
+import { Badge } from '../../shared/ui/badge';
 import { Settings, Home, Store } from 'lucide-react';
 
 const contextLabels = {

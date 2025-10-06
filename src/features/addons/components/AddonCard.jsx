@@ -1,7 +1,7 @@
-import { Card, CardContent } from '../UI/card';
-import { Badge } from '../UI/badge';
+import { Card, CardContent } from '../../../shared/ui/card';
+import { Badge } from '../../../shared/ui/badge';
 import { CheckCircle, Eye, Package } from 'lucide-react';
-import { formatCurrency } from '../../lib/quote';
+import { formatCurrency } from '../../../shared/lib/quote';
 
 // helper to render plain text in cards (summary may contain HTML from Woo)
 const stripHtml = (s) =>
