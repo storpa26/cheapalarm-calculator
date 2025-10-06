@@ -44,7 +44,7 @@ export function ContextSwitcher({
               <button
                 key={context}
                 onClick={() => onContextChange(context)}
-                className={`group neon-pop-3d relative h-28 w-44 rounded-full px-5 py-4 flex items-center justify-center gap-3
+                className={`group neon-pop-3d relative h-16 md:h-20 w-44 md:w-52 rounded-full py-0 px-5 flex items-center justify-between gap-3
                   transition-all duration-300 ease-out
                   ${isActive ? 'translate-y-0' : 'translate-y-[2px]'}
                   ${isActive ? 'shadow-[0_14px_40px_-12px_rgba(20,184,166,0.45),inset_0_-4px_0_rgba(0,0,0,0.2)]' : 'shadow-[0_10px_28px_-12px_rgba(20,184,166,0.25),inset_0_-2px_0_rgba(233,30,99,0.15)]'}
@@ -63,17 +63,17 @@ export function ContextSwitcher({
                 {/* Left label + icon for Residential, right icon + label for Retail */}
                 {context === 'residential' ? (
                   <>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
-                    <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
-                      <Icon className="w-6 h-6" />
+                    <span className={`flex-1 block text-sm font-semibold py-2 md:py-3 relative z-10 transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
+                    <div className={`h-full w-16 md:w-20 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 pointer-events-none flex-none -mr-5 md:-mr-6 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
+                      <Icon className="w-2/3 h-2/3" />
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
-                      <Icon className="w-6 h-6" />
+                    <div className={`h-full w-16 md:w-20 rounded-full overflow-hidden flex items-center justify-center transition-transform duration-300 pointer-events-none flex-none -ml-5 md:-ml-6 ${isActive ? 'bg-primary/30 scale-105' : 'bg-primary/10 scale-100 group-hover:scale-105'}`}>
+                      <Icon className="w-2/3 h-2/3" />
                     </div>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
+                    <span className={`flex-1 block text-sm font-semibold py-2 md:py-3 relative z-10 transition-colors duration-300 ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{contextLabels[context]}</span>
                   </>
                 )}
                 {/* Hover ring respects rounded corners via Tailwind ring and rounded-2xl */}
