@@ -4,15 +4,21 @@ import { X } from 'lucide-react';
 const DialogContext = createContext();
 
 const Dialog = ({ children, open, onOpenChange }) => {
-  const [isOpen, setIsOpen] = useState(open || false);
-  
+  // Support both controlled and uncontrolled usage
+  const isControlled = open !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const computedOpen = isControlled ? !!open : internalOpen;
+
   const handleOpenChange = (newOpen) => {
-    setIsOpen(newOpen);
+    if (!isControlled) {
+      setInternalOpen(newOpen);
+    }
     if (onOpenChange) onOpenChange(newOpen);
   };
-  
+
   return (
-    <DialogContext.Provider value={{ isOpen, setIsOpen: handleOpenChange }}>
+    <DialogContext.Provider value={{ isOpen: computedOpen, setIsOpen: handleOpenChange }}>
       {children}
     </DialogContext.Provider>
   );

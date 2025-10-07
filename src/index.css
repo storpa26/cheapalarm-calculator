@@ -135,7 +135,8 @@ body {
   transition: transform 180ms cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 180ms ease;
 }
 .neon-pop-3d:hover {
-  transform: translateZ(0) scale(1.03);
+  /* Avoid hover scaling to prevent subpixel text blurring */
+  transform: translateZ(0);
 }
 
 /* Modal surface contrast rules */

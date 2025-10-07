@@ -6,8 +6,7 @@ import { Plus, Calculator, AlertCircle, Loader2, ShoppingCart } from 'lucide-rea
 import { AddonCard } from '../../features/addons/components/AddonCard';
 import { AddonModal } from '../../features/addons/components/AddonModal';
 import { CapacityMeter } from '../../widgets/capacity-meter/CapacityMeter';
-import { addons as staticAddons } from '../../data/addons';
-import { assumptions } from '../../data/assumptions';
+// Dynamic-only integration: remove static fallbacks
 import { RulesEngine } from '../../lib/rules';
 import { formatCurrency } from '../../shared/lib/quote';
 import { wooApi } from '../../shared/api/api';
@@ -67,33 +66,17 @@ export function AddOnsSection({
         // Fetch regular add-on products
         const wooProducts = await wooApi.getAlarmAddonProducts(productType);
         const mappedAddons = mapWooProductsToAddons(wooProducts);
-        
-        // Fetch auto-required products
         const autoRequiredWooProducts = await wooApi.getAutoRequiredProducts(productType);
         const mappedAutoRequired = mapWooProductsToAddons(autoRequiredWooProducts, true);
-        
-        // Store all WooProducts for variation lookup
         setWooProducts([...wooProducts, ...autoRequiredWooProducts]);
-        
         const allAddonProducts = [...mappedAddons, ...mappedAutoRequired];
         setAddonProducts(allAddonProducts);
-        
-        // Call the callback to pass addon products to parent
         onAddonProductsChange(allAddonProducts);
-        
         setIsLoading(false);
       } catch (err) {
         console.error('Failed to fetch addon products:', err);
-        setError('Failed to load add-on products. Please try again later.');
+        setError('Failed to fetch add-on products from WooCommerce. Please try again.');
         setIsLoading(false);
-        
-        // Fallback to static data if API fails
-        const autoAppendedAddons = staticAddons.filter(addon => addon.isAutoAppended);
-        const fallbackAddonProducts = [...staticAddons.filter(addon => !addon.isAutoAppended), ...autoAppendedAddons];
-        setAddonProducts(fallbackAddonProducts);
-        
-        // Call the callback to pass addon products to parent
-        onAddonProductsChange(fallbackAddonProducts);
       }
     };
 
@@ -138,31 +121,28 @@ export function AddOnsSection({
         return next;
       });
 
-      // Find matching static addon for fallback data
-      const staticAddon = staticAddons.find(addon => addon.id === addonId);
-      
-      // Extract addon type from meta data with fallback to static data
+      // Extract addon type from meta data with safe default
       const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
-      const type = typeMetaData?.value || staticAddon?.type || 'accessory';
+      const type = typeMetaData?.value || 'accessory';
       
-      // Extract power consumption from meta data with fallback to static data
+      // Extract power consumption from meta data with safe default
       const powerMetaData = metaData.find(meta => meta.key === '_power_milliamps');
-      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : (staticAddon?.powerMilliAmps || 0);
+      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : 0;
       
-      // Extract whether it consumes input from meta data with fallback to static data
+      // Extract whether it consumes input from meta data with safe default
       const consumesInputMeta = metaData.find(meta => meta.key === '_consumes_input');
-      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : (staticAddon?.consumesInput || false);
+      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : false;
       
-      // Extract touchscreen property from meta data with fallback to static data
+      // Extract touchscreen property from meta data with safe default
       const isTouchscreenMeta = metaData.find(meta => meta.key === '_is_touchscreen');
-      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : (staticAddon?.isTouchscreen || false);
+      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : false;
       
-      // Extract min/max quantities from meta data with fallback to static addon data
+      // Extract min/max quantities from meta data with safe defaults
       const qtyMinMeta = metaData.find(meta => meta.key === '_qty_min');
       const qtyMaxMeta = metaData.find(meta => meta.key === '_qty_max');
       
-      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : (staticAddon?.qtyMin || 0);
-      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : (staticAddon?.qtyMax || 10);
+      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : 0;
+      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : 10;
       
       // Extract bullet points from description
       const bullets = product.short_description
@@ -430,54 +410,7 @@ export function AddOnsSection({
               }
             });
           } else {
-            console.warn(`⚠️ No WooCommerce product ID found for auto-required: ${item.id}`);
-            // For auto-required items, we know the WooCommerce IDs
-            let hardcodedId = 0;
-            if (item.id === 'expander') {
-              hardcodedId = 2389; // Input Expander
-            } else if (item.id === 'psu') {
-              hardcodedId = 2390; // Additional PSU
-            }
-            
-            if (hardcodedId > 0) {
-              console.log(`🛒 Using hardcoded ID for ${item.id}: ${hardcodedId}`);
-              cartItems.push({
-                id: hardcodedId,
-                quantity: item.quantity,
-                meta: {
-                  auto_added: true,
-                  reason: item.reason,
-                  context: context,
-                  product_name: addon.name
-                }
-              });
-            } else {
-              // Try hardcoded mapping for common add-ons
-              const hardcodedAddonMap = {
-                'outpir': 2378, // Outdoor motion sensor
-                'tskp': 2381,   // Touchscreen keypad
-                'smoke': 2393,  // Smoke detector
-                'panic': 2385,  // Panic button
-                'glass': 2384,  // Glass break detector
-                'door': 2383,   // Door/window sensor
-                'keypad2': 2382 // Additional keypad
-              };
-              
-              const mappedId = hardcodedAddonMap[item.id];
-              if (mappedId) {
-                console.log(`🛒 Using hardcoded addon mapping for ${item.id}: ${mappedId}`);
-                cartItems.push({
-                  id: mappedId,
-                  quantity: item.quantity,
-                  meta: {
-                    auto_added: true,
-                    reason: item.reason,
-                    context: context,
-                    product_name: addon.name
-                  }
-                });
-              }
-            }
+            console.warn(`⚠️ No WooCommerce product ID found for auto-required: ${item.id}; skipping dynamic-only flow`);
           }
         } else {
           console.warn(`⚠️ Auto-required addon not found: ${item.id}`);
@@ -695,7 +628,7 @@ export function AddOnsSection({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Base package:</span>
-                    <span>{formatCurrency(baseProductPrice ? baseProductPrice[context] : assumptions.basePrice[context])}</span>
+                    <span>{formatCurrency(baseProductPrice ? baseProductPrice[context] : 0)}</span>
                   </div>
                   
                   {selectedAddons.length > 0 && (

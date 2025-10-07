@@ -57,7 +57,7 @@ export function AddonCard({
         </div>
       )}
 
-      <CardContent className="p-4">
+      <CardContent className="!p-5 text-left">
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
