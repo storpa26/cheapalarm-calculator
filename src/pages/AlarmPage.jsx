@@ -3,6 +3,7 @@ import { ContextSwitcher } from '../components/Product/ContextSwitcher';
 import { AddOnsSection } from '../components/Product/AddOnsSection';
 import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
 import { StickyCartBar } from '../widgets/sticky-cart/StickyCartBar';
+import { SHOW_PRICE } from '../shared/config/flags';
 
 export default function AlarmPage() {
   const [productType, setProductType] = useState('wireless');
@@ -105,6 +106,7 @@ export default function AlarmPage() {
           onAddonProductsChange={handleAddonProductsChange}
           estimatedTotal={estimatedTotal}
           onAddToQuote={handleAddToQuote}
+          showPrice={!SHOW_PRICE}
         />
 
         {/* Lead Capture Form */}
@@ -131,6 +133,7 @@ export default function AlarmPage() {
                   propertyType: context,
                   buildingType: 'standard'
                 }}
+                showPrice={!SHOW_PRICE}
               />
             </div>
           </section>
@@ -144,6 +147,7 @@ export default function AlarmPage() {
         onAddToCart={handleAddToQuote}
         context={context}
         productType={productType}
+        showPrice={!SHOW_PRICE}
       />
     </div>
   );

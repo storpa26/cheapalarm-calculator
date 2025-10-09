@@ -2,14 +2,8 @@ import { useState } from 'react';
 import { Button } from '../../shared/ui/button';
 import { Badge } from '../../shared/ui/badge';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-
-// Simple currency formatter
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-AU', {
-    style: 'currency',
-    currency: 'AUD'
-  }).format(amount);
-};
+import { formatCurrency } from '../../shared/lib/quote';
+import { SHOW_PRICE } from '../../shared/config/flags';
 
 export function StickyCartBar({
   estimatedTotal,
@@ -17,9 +11,13 @@ export function StickyCartBar({
   context,
   basePrice,
   onAddToCart,
-  className = ''
+  className = '',
+  showPrice,
+  hidePrice = false,
+  hideContextBadge = false
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const canShowPrice = (showPrice ?? SHOW_PRICE) && !hidePrice;
   
   // Always include base product (1) + addon quantities
   const totalItems = 1 + (selectedAddons || []).reduce((sum, addon) => sum + addon.quantity, 0);
@@ -46,23 +44,27 @@ export function StickyCartBar({
               </span>
             </div>
             
-            <div className="hidden sm:flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                {context === 'residential' ? 'Residential' : 'Small Retail'} Package
-              </Badge>
-            </div>
+            {!hideContextBadge && (
+              <div className="hidden sm:flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {context === 'residential' ? 'Residential' : 'Small Retail'} Package
+                </Badge>
+              </div>
+            )}
           </div>
 
-          {/* Price and Add to Cart */}
+          {/* Price (optional) and Add to Cart */}
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-lg font-bold text-primary">
-                {formatCurrency(estimatedTotal || 0)}
+            {canShowPrice && (
+              <div className="text-right">
+                <div className="text-lg font-bold text-primary">
+                  {formatCurrency(estimatedTotal || 0)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Total installed
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                Total installed
-              </div>
-            </div>
+            )}
             
             <Button 
               onClick={handleAddToCart}

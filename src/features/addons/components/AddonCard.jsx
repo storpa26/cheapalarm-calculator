@@ -2,6 +2,7 @@ import { Card, CardContent } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
 import { CheckCircle, Eye, Package } from 'lucide-react';
 import { formatCurrency } from '../../../shared/lib/quote';
+import { SHOW_PRICE } from '../../../shared/config/flags';
 
 // helper to render plain text in cards (summary may contain HTML from Woo)
 const stripHtml = (s) =>
@@ -22,8 +23,10 @@ export function AddonCard({
   selectedQuantity,
   isAutoAppended = false,
   onClick,
-  className
+  className,
+  showPrice
 }) {
+  const shouldShowPrice = showPrice ?? SHOW_PRICE;
   const Icon = typeIcons[addon.type];
   const price = addon.unitPrice[context];
   const isSelected = selectedQuantity > 0;
@@ -74,12 +77,14 @@ export function AddonCard({
           </div>
 
           <div className="flex items-center justify-between">
-            <Badge
-              variant="outline"
-              className="text-primary border-primary/30 bg-primary/5"
-            >
-              {formatCurrency(price)}
-            </Badge>
+            {shouldShowPrice ? (
+              <Badge
+                variant="outline"
+                className="text-primary border-primary/30 bg-primary/5"
+              >
+                {formatCurrency(price)}
+              </Badge>
+            ) : <span className="text-xs text-muted-foreground"></span>}
 
             {!isAutoAppended && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -108,3 +113,5 @@ export function AddonCard({
     </Card>
   );
 }
+
+

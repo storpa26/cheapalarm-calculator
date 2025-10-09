@@ -1,4 +1,8 @@
 // Rules engine for alarm system validation
+import { addons as lookupAddons } from '../data/addons';
+
+// Build a lookup map for capacity-related defaults when Woo metadata is missing
+const LOOKUP_ADDONS_MAP = new Map(lookupAddons.map(a => [a.id, a]));
 export class RulesEngine {
   constructor(addonProducts = [], baseProductPrice = 0) {
     this.addonProducts = addonProducts;
@@ -10,7 +14,7 @@ export class RulesEngine {
     const selectionMap = new Map(selectedAddons.map(s => [s.id, s.quantity]));
 
     const canIncrement = (addonId, currentQuantity = 0) => {
-      const addon = this.addonProducts.find(a => a.id === addonId);
+      const addon = this.addonProducts.find(a => a.id === addonId) || LOOKUP_ADDONS_MAP.get(addonId);
       if (!addon) return { allowed: false, reason: 'Unknown item' };
 
       // Per-item max check
@@ -68,7 +72,8 @@ export class RulesEngine {
     let touchscreensUsed = 0;
 
     selectedAddons.forEach(({ id, quantity }) => {
-      const addon = this.addonProducts.find(a => a.id === id);
+      // Prefer dynamic Woo-mapped addon; fallback to static lookup for capacity fields
+      const addon = this.addonProducts.find(a => a.id === id) || LOOKUP_ADDONS_MAP.get(id);
       if (!addon) return;
       const qty = Number(quantity) || 0;
 

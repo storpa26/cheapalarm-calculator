@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
 import { Button } from '../../shared/ui/button';
 import { Input } from '../../shared/ui/input';
 import { Alert, AlertDescription } from '../../shared/ui/alert';
+import { SHOW_PRICE } from '../../shared/config/flags';
 import { ShoppingCart, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from 'lucide-react';
 
-export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext }) {
+export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext, showPrice }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +19,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState('idle');
   const [submitMessage, setSubmitMessage] = useState('');
+  const shouldShowPrice = showPrice ?? SHOW_PRICE;
 
   // Validation functions
   const validatePhone = (phone) => {
@@ -247,7 +249,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
                  <div className="mb-2">
                    <p className="text-muted-foreground">
                      <span className="font-medium">System:</span> {productContext.productName || `${productContext.productType} ${productContext.context} System`}
-                     {productContext.estimatedTotal && (
+                     {shouldShowPrice && productContext.estimatedTotal && (
                        <span className="font-medium text-primary ml-2">
                          Est. ${productContext.estimatedTotal.toLocaleString()}
                        </span>

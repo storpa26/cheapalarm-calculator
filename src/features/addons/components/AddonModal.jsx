@@ -6,15 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui/tab
 import { Switch } from '../../../shared/ui/switch';
 import { Minus, Plus, CheckCircle2, Package, Play, HelpCircle, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../../shared/lib/quote';
+import { SHOW_PRICE } from '../../../shared/config/flags';
 
-export function AddonModal({ 
-  addon, 
-  context, 
-  isOpen, 
-  currentQuantity, 
+export function AddonModal({
+  addon,
+  context,
+  isOpen,
+  currentQuantity,
   validation,
-  onClose, 
-  onSave 
+  onClose,
+  onSave,
+  showPrice
 }) {
   const [quantity, setQuantity] = useState(currentQuantity);
   const [include, setInclude] = useState(currentQuantity > 0);
@@ -30,6 +32,7 @@ export function AddonModal({
 
   const price = addon.unitPrice[context];
   const totalPrice = price * quantity;
+  const shouldShowPrice = showPrice ?? SHOW_PRICE;
 
   const handleSave = () => {
     // Always save the current quantity (0 means remove)
@@ -75,9 +78,11 @@ export function AddonModal({
             <div className="flex-1">
               <DialogTitle className="text-xl">{addon.name}</DialogTitle>
               {/* <p className="text-muted-foreground mt-1">{addon.summary}</p> */}
-              <Badge variant="outline" className="mt-2 text-primary border-primary/30">
-                {formatCurrency(price)} each
-              </Badge>
+              {SHOW_PRICE ? (
+                <Badge variant="outline" className="mt-2 text-primary border-primary/30">
+                  {formatCurrency(price)} each
+                </Badge>
+              ) : null}
             </div>
           </div>
         </DialogHeader>
@@ -223,7 +228,7 @@ export function AddonModal({
 
           {/* Footer - REMOVE the toggle from here since it's moved above */}
           <div className="space-y-4">
-            {include && quantity > 0 && (
+            {shouldShowPrice && include && quantity > 0 && (
               <div className="bg-primary/5 rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Total for this item:</span>
@@ -299,3 +304,5 @@ function getHelpScenarios(addonId) {
     }
   ];
 }
+
+

@@ -9,8 +9,13 @@ import { CapacityMeter } from '../../widgets/capacity-meter/CapacityMeter';
 // Dynamic-only integration: remove static fallbacks
 import { RulesEngine } from '../../lib/rules';
 import { formatCurrency } from '../../shared/lib/quote';
+import { SHOW_PRICE } from '../../shared/config/flags';
 import { wooApi } from '../../shared/api/api';
 import { useToast } from '../../hooks/use-toast';
+import { addons as lookupAddons } from '../../data/addons';
+
+// Simple lookup map to fill missing Woo metadata
+const LOOKUP_ADDONS_MAP = new Map(lookupAddons.map(a => [a.id, a]));
 
 export function AddOnsSection({
   context,
@@ -18,7 +23,8 @@ export function AddOnsSection({
   selectedAddons,
   onUpdateAddons,
   onAddonProductsChange, 
-  estimatedTotal
+  estimatedTotal,
+  showPrice
 }) {
   const { toast } = useToast();
   const [selectedAddon, setSelectedAddon] = useState(null);
@@ -31,6 +37,7 @@ export function AddOnsSection({
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
+  const shouldShowPrice = showPrice ?? SHOW_PRICE;
 
   // Fetch addon-only products from WooCommerce
   useEffect(() => {
@@ -121,33 +128,36 @@ export function AddOnsSection({
         return next;
       });
 
-      // Extract addon type from meta data with safe default
+      // Extract addon type from meta data with safe default and lookup fallback
+      const lookup = LOOKUP_ADDONS_MAP.get(addonId);
       const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
-      const type = typeMetaData?.value || 'accessory';
+      const type = typeMetaData?.value || lookup?.type || 'accessory';
       
-      // Extract power consumption from meta data with safe default
+      // Extract power consumption with lookup fallback
       const powerMetaData = metaData.find(meta => meta.key === '_power_milliamps');
-      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : 0;
+      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : (lookup?.powerMilliAmps ?? 0);
       
-      // Extract whether it consumes input from meta data with safe default
+      // Extract whether it consumes input with lookup fallback
       const consumesInputMeta = metaData.find(meta => meta.key === '_consumes_input');
-      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : false;
+      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : (lookup?.consumesInput ?? false);
       
-      // Extract touchscreen property from meta data with safe default
+      // Extract touchscreen property with lookup fallback
       const isTouchscreenMeta = metaData.find(meta => meta.key === '_is_touchscreen');
-      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : false;
+      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : (lookup?.isTouchscreen ?? false);
       
-      // Extract min/max quantities from meta data with safe defaults
+      // Extract min/max quantities with lookup fallback
       const qtyMinMeta = metaData.find(meta => meta.key === '_qty_min');
       const qtyMaxMeta = metaData.find(meta => meta.key === '_qty_max');
       
-      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : 0;
-      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : 10;
+      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : (lookup?.qtyMin ?? 0);
+      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : (lookup?.qtyMax ?? 10);
       
       // Extract bullet points from description
-      const bullets = product.short_description
+      const bulletsFromHtml = product.short_description
         ? extractBullets(product.short_description)
         : [];
+      const bullets = bulletsFromHtml.length > 0 ? bulletsFromHtml : (lookup?.bullets ?? []);
+      const summary = (product.short_description || '').trim() || lookup?.summary || '';
 
       // Minimal helper: prefers <li>, falls back to <br>/<p>/plain text
       function extractBullets(html) {
@@ -217,7 +227,7 @@ export function AddOnsSection({
         consumesInput,
         powerMilliAmps,
         unitPrice,
-        summary: product.short_description || '',
+        summary,
         bullets: bullets.length > 0 ? bullets : ["No details available"],
         qtyMin,
         qtyMax,
@@ -556,6 +566,7 @@ export function AddOnsSection({
                   context={context}
                   selectedQuantity={getSelectedQuantity(addon.id)}
                   onClick={() => handleAddonClick(addon)}
+                  showPrice={showPrice}
                 />
               ))}
             </div>
@@ -576,6 +587,7 @@ export function AddOnsSection({
                       selectedQuantity={quantity}
                       isAutoAppended={true}
                       onClick={() => {}}
+                      showPrice={showPrice}
                     />
                   ))}
                 </div>
@@ -612,24 +624,28 @@ export function AddOnsSection({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-primary" />
-                  Estimated Total
+                  {shouldShowPrice ? 'Estimated Total' : 'Selected Items'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">
-                    {formatCurrency(calculatedTotal)}
+                {shouldShowPrice ? (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary">
+                      {formatCurrency(calculatedTotal)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Including professional installation
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Including professional installation
-                  </p>
-                </div>
+                ) : null}
 
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Base package:</span>
-                    <span>{formatCurrency(baseProductPrice ? baseProductPrice[context] : 0)}</span>
-                  </div>
+                  {shouldShowPrice ? (
+                    <div className="flex justify-between">
+                      <span>Base package:</span>
+                      <span>{formatCurrency(baseProductPrice ? baseProductPrice[context] : 0)}</span>
+                    </div>
+                  ) : null}
                   
                   {selectedAddons.length > 0 && (
                     <div className="space-y-1">
@@ -640,7 +656,9 @@ export function AddOnsSection({
                         return (
                           <div key={selection.id} className="flex justify-between text-xs pl-2">
                             <span>{addon.name} × {selection.quantity}</span>
-                            <span>{formatCurrency(addon.unitPrice[context] * selection.quantity)}</span>
+                            {shouldShowPrice ? (
+                              <span>{formatCurrency(addon.unitPrice[context] * selection.quantity)}</span>
+                            ) : null}
                           </div>
                         );
                       })}
@@ -656,7 +674,9 @@ export function AddOnsSection({
                         return (
                           <div key={item.id} className="flex justify-between text-xs pl-2 text-yellow-700">
                             <span>{addon.name} × {item.quantity}</span>
-                            <span>{formatCurrency(addon.unitPrice[context] * item.quantity)}</span>
+                            {shouldShowPrice ? (
+                              <span>{formatCurrency(addon.unitPrice[context] * item.quantity)}</span>
+                            ) : null}
                           </div>
                         );
                       })}
@@ -683,9 +703,11 @@ export function AddOnsSection({
                   )}
                 </Button>
 
-                <p className="text-xs text-muted-foreground text-center">
-                  Final price may vary based on site conditions and installation requirements
-                </p>
+                {shouldShowPrice ? (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Final price may vary based on site conditions and installation requirements
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           </div>
@@ -699,6 +721,7 @@ export function AddOnsSection({
           validation={validation}
           onClose={() => setIsModalOpen(false)}
           onSave={handleModalSave}
+          showPrice={showPrice}
         />
       </div>
     </section>
