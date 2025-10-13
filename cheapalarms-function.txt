@@ -1,0 +1,316 @@
+<?php
+// Load parent and child styles for Hello Elementor
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_style('hello-elementor', get_template_directory_uri() . '/style.css');
+    wp_enqueue_style('hello-elementor-child', get_stylesheet_directory_uri() . '/style.css', ['hello-elementor']);
+});
+
+// Remove Country & State fields on checkout
+add_filter('woocommerce_checkout_fields', function ($fields) {
+    unset($fields['billing']['billing_country']);
+    unset($fields['billing']['billing_state']);
+    unset($fields['shipping']['shipping_country']);
+    unset($fields['shipping']['shipping_state']);
+    return $fields;
+});
+
+
+//test button removal
+add_filter('woocommerce_loop_add_to_cart_link', function($html, $product, $args){
+    if (is_page('intercom-silver')) {  // <-- your page ID
+        return '';       // remove the button
+    }
+    return $html;
+}, 10, 3);
+//end
+
+
+// react enqueue
+add_filter('script_loader_tag', function ($tag, $handle, $src) {
+  if (strpos($src, '/react-app/assets/') !== false && str_ends_with(parse_url($src, PHP_URL_PATH), '.js')) {
+    if (strpos($tag, 'type=') === false) {
+      $tag = str_replace('<script ', '<script type="module" ', $tag);
+    } else {
+      $tag = preg_replace('/type=(["\']).*?\1/', 'type="module"', $tag, 1);
+    }
+  }
+  return $tag;
+}, 10, 3);
+
+if (!function_exists('str_ends_with')) {
+  function str_ends_with($haystack, $needle) {
+    $len = strlen($needle);
+    if ($len === 0) return true;
+    return substr($haystack, -$len) === $needle;
+  }
+}
+
+function ca_enqueue_react_entry($entry_key, $root_id) {
+  $dir = get_stylesheet_directory() . '/react-app';
+  $uri = get_stylesheet_directory_uri() . '/react-app';
+  $manifest_path = $dir . '/.vite/manifest.json';
+  
+  if (!file_exists($manifest_path)) {
+    return '<div>React app not built yet. Run npm run build.</div>';
+  }
+  
+  $manifest = json_decode(file_get_contents($manifest_path), true);
+  if (empty($manifest[$entry_key])) {
+    return '<div>Entry not found in manifest.</div>';
+  }
+  
+  $entry = $manifest[$entry_key];
+  
+  if (!empty($entry['css'])) {
+    foreach ($entry['css'] as $css) {
+      $path = $dir . '/' . $css;
+      wp_enqueue_style('ca-react-' . md5($css), $uri . '/' . $css, array(), file_exists($path) ? filemtime($path) : null);
+    }
+  }
+  
+  if (!empty($entry['imports'])) {
+    foreach ($entry['imports'] as $import_key) {
+      if (!empty($manifest[$import_key]['css'])) {
+        foreach ($manifest[$import_key]['css'] as $css) {
+          $path = $dir . '/' . $css;
+          wp_enqueue_style('ca-react-' . md5($css), $uri . '/' . $css, array(), file_exists($path) ? filemtime($path) : null);
+        }
+      }
+    }
+  }
+  
+  $file = $entry['file'];
+  $path = $dir . '/' . $file;
+  $handle = 'ca-react-' . md5($entry_key);
+  
+  wp_enqueue_script($handle, $uri . '/' . $file, array(), file_exists($path) ? filemtime($path) : null, true);
+  
+  return '<div id="' . esc_attr($root_id) . '"></div>';
+}
+
+add_shortcode('my_react_app', function () {
+  return ca_enqueue_react_entry('src/main.tsx', 'root');
+});
+
+add_shortcode('ca_quiz_app', function () {
+  return ca_enqueue_react_entry('src/entry-quiz.tsx', 'ca-quiz-root');
+});
+// end
+
+
+
+/* --------------------------------------------------------------------------
+   Helper: fetch all postcode patterns from WooCommerce shipping zones
+---------------------------------------------------------------------------*/
+if ( ! function_exists('my_get_allowed_postcodes_from_shipping_zones') ) {
+    function my_get_allowed_postcodes_from_shipping_zones(): array {
+        if ( ! class_exists('WC_Shipping_Zones') ) {
+            return [];
+        }
+        $codes = [];
+
+        // All custom zones
+        $zones = WC_Shipping_Zones::get_zones();
+
+        foreach ( $zones as $zone_data ) {
+            $zone_id = isset($zone_data['zone_id']) ? (int) $zone_data['zone_id'] : ( $zone_data['id'] ?? 0 );
+            if ( ! $zone_id ) continue;
+
+            $zone = new WC_Shipping_Zone($zone_id);
+            foreach ( $zone->get_zone_locations() as $loc ) {
+                if ( isset($loc->type, $loc->code) && $loc->type === 'postcode' && $loc->code !== '' ) {
+                    $codes[] = strtoupper(trim($loc->code));
+                }
+            }
+        }
+
+        // If you also list postcodes in the "Rest of the world" zone (id 0), uncomment:
+        // $zone0 = WC_Shipping_Zones::get_zone(0);
+        // if ( $zone0 instanceof WC_Shipping_Zone ) {
+        //     foreach ( $zone0->get_zone_locations() as $loc ) {
+        //         if ( $loc->type === 'postcode' && $loc->code !== '' ) {
+        //             $codes[] = strtoupper(trim($loc->code));
+        //         }
+        //     }
+        // }
+
+        return array_values(array_unique($codes));
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Front-end JS: enqueue both scripts and localize Woo shipping-zone postcodes
+   - postcode-autocomplete.js (checkout)
+   - postcode-home.js (homepage only)
+---------------------------------------------------------------------------*/
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_script('jquery');
+    wp_enqueue_script('jquery-ui-autocomplete');
+
+    // Checkout script
+    $checkout_js_path = get_stylesheet_directory() . '/js/postcode-autocomplete.js';
+    wp_enqueue_script(
+        'postcode-autocomplete',
+        get_stylesheet_directory_uri() . '/js/postcode-autocomplete.js',
+        ['jquery', 'jquery-ui-autocomplete'],
+        file_exists($checkout_js_path) ? filemtime($checkout_js_path) : time(),
+        true
+    );
+
+    // Homepage script (only on front page)
+    if ( is_front_page() ) {
+        $home_js_path = get_stylesheet_directory() . '/js/postcode-home.js';
+        wp_enqueue_script(
+            'postcode-home',
+            get_stylesheet_directory_uri() . '/js/postcode-home.js',
+            ['jquery', 'jquery-ui-autocomplete'],
+            file_exists($home_js_path) ? filemtime($home_js_path) : time(),
+            true
+        );
+    }
+
+    // Localize the same Woo-derived list for BOTH scripts
+    $codes = my_get_allowed_postcodes_from_shipping_zones();
+
+    wp_localize_script('postcode-autocomplete', 'postcodeData', [
+        'codes' => $codes,
+    ]);
+
+    if ( is_front_page() ) {
+        wp_localize_script('postcode-home', 'postcodeData', [
+            'codes' => $codes,
+        ]);
+    }
+});
+
+
+/* --------------------------------------------------------------------------
+   Server-side postcode validation on checkout (JSON version - DISABLED)
+   Keeping this code for reference; set $enable_json_validation = true to re-enable.
+---------------------------------------------------------------------------*/
+add_action('woocommerce_checkout_process', function () {
+    $enable_json_validation = false; // <— keep FALSE to disable the JSON check
+
+    if ( ! $enable_json_validation ) {
+        return; // skip JSON-based validation; Woo shipping zones handle it now
+    }
+
+    $json_path = get_stylesheet_directory() . '/postal-codes.json';
+    $postcode  = isset($_POST['billing_postcode']) ? trim($_POST['billing_postcode']) : '';
+
+    if (file_exists($json_path)) {
+        $allowed = json_decode(file_get_contents($json_path), true);
+        if (is_array($allowed) && !in_array($postcode, $allowed, true)) {
+            wc_add_notice(__('We don’t deliver to your area. Please enter a valid service postcode.'), 'error');
+        }
+    }
+});
+
+// Add "Empty Cart" button on the cart page
+add_action('woocommerce_cart_actions', function () {
+    $url = wp_nonce_url(
+        add_query_arg('empty_cart', 'yes', wc_get_cart_url()),
+        'wc_empty_cart',
+        'wc_nonce'
+    );
+    echo '<a href="' . esc_url($url) . '" class="button wp-element-button empty-cart">'
+        . esc_html__('Empty cart', 'yourtheme') . '</a>';
+});
+
+// Handle the clear-cart request
+add_action('init', function () {
+    if (
+        isset($_GET['empty_cart'], $_GET['wc_nonce']) &&
+        wp_verify_nonce($_GET['wc_nonce'], 'wc_empty_cart')
+    ) {
+        if (function_exists('WC') && WC()->cart) {
+            WC()->cart->empty_cart();
+        }
+        wp_safe_redirect(wc_get_cart_url());
+        exit;
+    }
+});
+/*End*/
+
+
+
+
+
+/* --------------------------------------------------------------------------
+   Authoritative checkout postcode validation using Woo shipping zones.
+   Runs late so it can reconcile any earlier notices.
+---------------------------------------------------------------------------*/
+add_action('woocommerce_checkout_process', function () {
+
+    // If no postcode submitted, let Woo/your other code handle
+    if ( empty($_POST['billing_postcode']) ) {
+        return;
+    }
+
+    $postcode = strtoupper( trim( (string) $_POST['billing_postcode'] ) );
+
+    // Because you removed the country field, fall back to store base country if not posted.
+    $country = ! empty($_POST['billing_country'])
+        ? strtoupper( (string) $_POST['billing_country'] )
+        : ( function_exists('wc') && wc()->countries ? wc()->countries->get_base_country() : 'AU' );
+
+    if ( ! class_exists('WC_Shipping_Zones') ) {
+        return; // Shipping not set up properly; don't interfere
+    }
+
+    // Build a Woo-style package destination to find the matching zone
+    $package = [
+        'destination' => [
+            'country'   => $country,
+            'state'     => '',
+            'postcode'  => $postcode,
+            'city'      => '',
+            'address'   => '',
+            'address_2' => '',
+        ],
+    ];
+
+    $zone = WC_Shipping_Zones::get_zone_matching_package( $package );
+
+    $is_valid_by_woo = false;
+    if ( $zone instanceof WC_Shipping_Zone ) {
+        $methods = $zone->get_shipping_methods( true ); // enabled methods only
+        $is_valid_by_woo = ! empty( $methods );
+
+        // If you want to exclude the generic "Rest of the world" zone (id=0), uncomment:
+        // if ( (int) $zone->get_id() === 0 ) { $is_valid_by_woo = false; }
+    }
+
+    $json_error_text = 'We don’t deliver to your area. Please enter a valid service postcode.';
+
+    if ( $is_valid_by_woo ) {
+        // Remove ONLY the specific JSON-based error if it was added
+        $errors = wc_get_notices('error');
+        if ( ! empty( $errors ) ) {
+            wc_clear_notices();
+            foreach ( $errors as $err ) {
+                $text = is_array($err) && isset($err['notice']) ? $err['notice'] : (string) $err;
+                if ( $text !== $json_error_text ) {
+                    wc_add_notice( $text, 'error' );
+                }
+            }
+        }
+    } else {
+        // Ensure a clear error exists if Woo says NO (avoid duplicates)
+        $errors = wc_get_notices('error');
+        $has_json_error = false;
+        if ( ! empty( $errors ) ) {
+            foreach ( $errors as $err ) {
+                $text = is_array($err) && isset($err['notice']) ? $err['notice'] : (string) $err;
+                if ( $text === $json_error_text ) {
+                    $has_json_error = true;
+                    break;
+                }
+            }
+        }
+        if ( ! $has_json_error ) {
+            wc_add_notice( __( $json_error_text ), 'error' );
+        }
+    }
+}, 99); // run late so we can reconcile previous notices

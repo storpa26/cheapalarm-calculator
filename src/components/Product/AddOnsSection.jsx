@@ -433,57 +433,25 @@ export function AddOnsSection({
         throw new Error('No valid items to add to cart');
       }
       
-      // Add items to WooCommerce cart one by one for better error handling
-      let addedCount = 0;
-      for (const item of cartItems) {
-        try {
-          console.log(`🛒 Adding item ${addedCount + 1}/${cartItems.length}:`, item);
-          await wooApi.addItemsToCart([item]);
-          addedCount++;
-          console.log(`✅ Successfully added item ${addedCount}`);
-        } catch (itemError) {
-          console.error(`❌ Failed to add item:`, item, itemError);
-          // Continue with other items rather than failing completely
-        }
-      }
-      
-      if (addedCount === 0) {
-        throw new Error('Failed to add any items to cart');
-      }
-      
-      // Verify final cart state
-      const finalCart = await wooApi.getCart();
-      console.log('🛒 Final cart state:', finalCart);
-      
-      // Save current state to localStorage before page reload
-       const stateToSave = {
-         selectedAddons,
-         context,
-         productType,
-         estimatedTotal,
-         timestamp: Date.now(),
-         shouldOpenSideCart: true // Flag to indicate side cart should open after reload
-       };
-       
-       try {
-         localStorage.setItem('addons-section-state', JSON.stringify(stateToSave));
-         console.log('💾 AddOnsSection: State saved to localStorage before reload');
-       } catch (error) {
-         console.error('Failed to save AddOnsSection state:', error);
-       }
-      
-      // Show success message
+      // Redirect to live site child theme endpoint to add bundle
+      const WP_BASE_URL = import.meta.env.VITE_WP_BASE_URL || 'https://cheapalarms.com.au';
+      const endpoint = `${WP_BASE_URL}/wp-admin/admin-ajax.php?action=ca_bundle_add`;
+
+      const payloadItems = cartItems.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        ...(item.variation ? { variation: item.variation } : {}),
+        meta: item.meta || {}
+      }));
+
+      const encoded = encodeURIComponent(btoa(JSON.stringify(payloadItems)));
+
       toast({
-        title: "🎉 Items Added to Cart!",
-        description: `Successfully added ${addedCount} items. Refreshing to update cart...`,
+        title: "Redirecting to Live Cart",
+        description: "Taking you to Cheap Alarms to finalize cart.",
       });
-      
-      // Force page reload to trigger Xootix Side Cart update
-      console.log('🔄 AddOnsSection: Reloading page to update cart...');
-      setTimeout(() => {
-        console.log('🔄 AddOnsSection: EXECUTING PAGE RELOAD NOW!');
-        window.location.reload();
-      }, 1000);
+
+      window.location.href = `${endpoint}&items=${encoded}`;
        
      } catch (err) {
        console.error('❌ Cart operation failed:', err);

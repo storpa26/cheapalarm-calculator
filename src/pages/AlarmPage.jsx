@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ContextSwitcher } from '../components/Product/ContextSwitcher';
 import { AddOnsSection } from '../components/Product/AddOnsSection';
 import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
@@ -12,6 +12,8 @@ export default function AlarmPage() {
   const [addonProducts, setAddonProducts] = useState([]);
   const [estimatedTotal, setEstimatedTotal] = useState(0);
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadData, setLeadData] = useState(null);
+  const addOnsRef = useRef(null);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
 
   const handleAddonsUpdate = (addons) => {
@@ -40,22 +42,18 @@ export default function AlarmPage() {
     setShowLeadForm(true);
   };
 
-  const handleLeadSubmit = async (leadData) => {
+  const handleLeadSubmit = async (data) => {
     setIsSubmittingLead(true);
-    
     try {
-      // Here you would typically send the lead data to your backend
-      console.log('Lead submitted:', leadData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Show success message or redirect
-      alert('Thank you! Your quote request has been submitted successfully.');
+      setLeadData(data);
       setShowLeadForm(false);
+      setTimeout(() => {
+        const el = addOnsRef.current;
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
     } catch (error) {
-      console.error('Failed to submit lead:', error);
-      alert('Sorry, there was an error submitting your request. Please try again.');
+      console.error('Failed to handle lead submit:', error);
+      alert('Sorry, there was an error. Please try again.');
     } finally {
       setIsSubmittingLead(false);
     }
@@ -97,17 +95,31 @@ export default function AlarmPage() {
           </div>
         </section>
 
-        {/* Add-ons Section */}
-        <AddOnsSection
-          context={context}
-          productType={productType}
-          selectedAddons={selectedAddons}
-          onUpdateAddons={handleAddonsUpdate}
-          onAddonProductsChange={handleAddonProductsChange}
-          estimatedTotal={estimatedTotal}
-          onAddToQuote={handleAddToQuote}
-          showPrice={!SHOW_PRICE}
-        />
+        {/* Add-ons Section (gated) */}
+        {leadData ? (
+          <div ref={addOnsRef}>
+            <AddOnsSection
+              context={context}
+              productType={productType}
+              selectedAddons={selectedAddons}
+              onUpdateAddons={handleAddonsUpdate}
+              onAddonProductsChange={handleAddonProductsChange}
+              estimatedTotal={estimatedTotal}
+              onAddToQuote={handleAddToQuote}
+              showPrice={!SHOW_PRICE}
+            />
+          </div>
+        ) : (
+          <section className="py-8 px-4">
+            <div className="container mx-auto max-w-6xl text-center">
+              <div className="inline-block bg-muted/30 border rounded-lg px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Start by requesting your quote. We’ll unlock add-ons after.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Lead Capture Form */}
         {showLeadForm && (

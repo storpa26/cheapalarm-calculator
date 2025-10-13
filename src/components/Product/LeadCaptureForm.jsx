@@ -95,7 +95,11 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
         // Call the original onSubmit for any additional handling
         onSubmit(formData);
       } else {
-        throw new Error('Failed to submit lead');
+        // Surface server error details if available
+        const errMsg = result.error || 'Failed to submit lead';
+        setSubmitStatus('error');
+        setSubmitMessage(errMsg);
+        return;
       }
     } catch (error) {
       setSubmitStatus('error');
