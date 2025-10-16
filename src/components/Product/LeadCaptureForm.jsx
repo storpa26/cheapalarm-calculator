@@ -79,31 +79,33 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
     setSubmitMessage('');
 
     try {
-      // Import the GHL API function
+      // Import the GHL API functions
       const { submitLeadToGHL } = await import('../../lib/ghl-api');
       
-      // Submit to GoHighLevel
+      // For the new workflow, form submission only creates/updates the contact
       const result = await submitLeadToGHL(formData);
       
       if (result.success) {
         setSubmitStatus('success');
         const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
-        const message = isGHLDisabled 
-          ? '🔧 Development Mode: Form submitted successfully (GHL integration disabled)'
-          : '🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.';
+        let message = isGHLDisabled 
+          ? '🔧 Development Mode: Contact saved successfully (GHL integration disabled)'
+          : `✅ Thank you! Your contact information has been saved. Now click "Add to Cart" to create your estimate.`;
+        
         setSubmitMessage(message);
         // Call the original onSubmit for any additional handling
         onSubmit(formData);
       } else {
         // Surface server error details if available
-        const errMsg = result.error || 'Failed to submit lead';
+        const errMsg = result.error || 'Failed to save contact information';
         setSubmitStatus('error');
         setSubmitMessage(errMsg);
         return;
       }
     } catch (error) {
+      console.error('Form submission error:', error);
       setSubmitStatus('error');
-      setSubmitMessage(error instanceof Error ? error.message : 'An error occurred. Please try again.');
+      setSubmitMessage('Sorry, there was an error saving your information. Please try again.');
     }
   };
 

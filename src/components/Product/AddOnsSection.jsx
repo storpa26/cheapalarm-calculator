@@ -446,6 +446,54 @@ export function AddOnsSection({
 
       const encoded = encodeURIComponent(btoa(JSON.stringify(payloadItems)));
 
+      // Create draft estimate/invoice in GoHighLevel before redirecting
+      try {
+        const { createDraftDocument } = await import('../../lib/ghl-api.js');
+        
+        // Build payload for GHL draft creation
+        const ghlPayload = {
+          firstName: 'Customer', // Will be updated when they fill the form
+          lastName: 'Inquiry',
+          email: 'pending@example.com', // Placeholder
+          phone: '+1234567890', // Placeholder
+          address: 'TBD',
+          postcode: '0000',
+          productContext: {
+            productName: baseProduct?.name || 'Security System',
+            productType: context,
+            estimatedTotal: estimatedTotal,
+            selectedAddons: selectedAddons,
+            cart: cartItems.map(item => ({
+              id: item.id,
+              quantity: item.quantity,
+              name: item.meta?.product_name || 'Product',
+              price: 0, // Will be calculated in GHL
+              meta: item.meta
+            }))
+          },
+          propertyContext: {
+            address: 'TBD',
+            phone: '+1234567890'
+          }
+        };
+
+        console.log('🔧 Creating draft estimate in GoHighLevel...');
+        const draftResult = await createDraftDocument(ghlPayload, 'estimate');
+        
+        if (draftResult.success) {
+          console.log('✅ Draft estimate created successfully:', draftResult.documentId);
+          toast({
+            title: "Draft Estimate Created",
+            description: "Your quote has been prepared. Redirecting to cart...",
+          });
+        } else {
+          console.warn('⚠️ Draft creation failed, continuing with cart redirect');
+        }
+      } catch (draftError) {
+        console.error('❌ Draft creation failed:', draftError);
+        // Continue with cart redirect even if draft creation fails
+      }
+
       toast({
         title: "Redirecting to Live Cart",
         description: "Taking you to Cheap Alarms to finalize cart.",

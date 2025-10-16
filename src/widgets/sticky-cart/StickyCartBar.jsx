@@ -14,20 +14,31 @@ export function StickyCartBar({
   className = '',
   showPrice,
   hidePrice = false,
-  hideContextBadge = false
+  hideContextBadge = false,
+  isLoading: externalIsLoading = false,
+  buttonText = 'Add to Cart'
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const canShowPrice = (showPrice ?? SHOW_PRICE) && !hidePrice;
+  
+  // Use external loading state if provided, otherwise use internal state
+  const isCurrentlyLoading = externalIsLoading || isLoading;
   
   // Always include base product (1) + addon quantities
   const totalItems = 1 + (selectedAddons || []).reduce((sum, addon) => sum + addon.quantity, 0);
 
   const handleAddToCart = async () => {
-    setIsLoading(true);
-    try {
+    if (externalIsLoading) {
+      // If external loading is being managed, don't manage internal state
       await onAddToCart();
-    } finally {
-      setIsLoading(false);
+    } else {
+      // Manage internal loading state
+      setIsLoading(true);
+      try {
+        await onAddToCart();
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -68,19 +79,19 @@ export function StickyCartBar({
             
             <Button 
               onClick={handleAddToCart}
-              disabled={isLoading}
+              disabled={isCurrentlyLoading}
               size="lg"
               className="bg-primary hover:bg-primary-hover text-primary-foreground font-semibold min-w-[120px]"
             >
-              {isLoading ? (
+              {isCurrentlyLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Adding...
+                  {buttonText.includes('...') ? buttonText : 'Loading...'}
                 </>
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4 mr-2" />
-                  Add to Cart
+                  {buttonText}
                 </>
               )}
             </Button>
