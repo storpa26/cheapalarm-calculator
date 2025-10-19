@@ -328,27 +328,38 @@ async function createDocument(contactId, payload, docType) {
  * Maps cart items to GHL line items format
  */
 function mapCartToLineItems(cart, context) {
+  console.log('=== mapCartToLineItems Debug ===');
+  console.log('Input cart:', cart);
+  console.log('Context:', context);
+  
   const lineItems = [];
 
   for (const item of cart) {
+    console.log('Processing item:', item);
+    
     // Handle unit price - could be object with context or simple number
     let unitPrice = 0;
-    if (typeof item.unitPrice === 'object' && item.unitPrice[context]) {
+    if (typeof item.unitPrice === 'object' && item.unitPrice !== null && item.unitPrice[context]) {
       unitPrice = item.unitPrice[context];
+      console.log(`Using context price for ${item.name}: ${unitPrice} (from ${context})`);
     } else if (typeof item.unitPrice === 'number') {
       unitPrice = item.unitPrice;
+      console.log(`Using direct price for ${item.name}: ${unitPrice}`);
+    } else {
+      console.warn(`No valid price found for ${item.name}. unitPrice:`, item.unitPrice);
     }
 
     const lineItem = {
       name: item.name || 'Unknown Item',
       description: item.description || 'One-off service',
-      amount: Math.round(unitPrice * 100), // Convert to cents for GHL API
+      amount: Math.round(unitPrice), // GHL expects amount in dollars, not cents
       qty: item.qty || item.quantity || 1,
       type: 'one_time',
       taxInclusive: true,
       currency: 'USD'
     };
 
+    console.log(`Created line item for ${item.name}:`, lineItem);
     lineItems.push(lineItem);
   }
 
@@ -356,12 +367,16 @@ function mapCartToLineItems(cart, context) {
   const totalBeforeDiscount = lineItems.reduce((sum, item) => sum + (item.amount * item.qty), 0);
   const targetTotal = cart.find(item => item.targetTotal)?.targetTotal;
   
-  if (targetTotal && targetTotal < (totalBeforeDiscount / 100)) {
-    const discountAmount = totalBeforeDiscount - (targetTotal * 100);
+  console.log('Total before discount (dollars):', totalBeforeDiscount);
+  console.log('Target total:', targetTotal);
+  
+  if (targetTotal && targetTotal < totalBeforeDiscount) {
+    const discountAmount = totalBeforeDiscount - targetTotal;
+    console.log('Adding discount line item:', discountAmount);
     lineItems.push({
       name: 'Discount',
       description: 'Applied discount to reach target price',
-      amount: -discountAmount, // Negative amount in cents
+      amount: -discountAmount, // Negative amount in dollars
       qty: 1,
       type: 'one_time',
       taxInclusive: true,
@@ -369,6 +384,8 @@ function mapCartToLineItems(cart, context) {
     });
   }
 
+  console.log('Final line items:', lineItems);
+  console.log('================================');
   return lineItems;
 }
 

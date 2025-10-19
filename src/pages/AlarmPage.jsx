@@ -136,19 +136,50 @@ export default function AlarmPage() {
     };
     cart.push(baseProduct);
     
-    // Add selected addons
+    console.log('=== buildCartFromSelectedAddons Debug ===');
+    console.log('selectedAddons:', selectedAddons);
+    console.log('context:', context);
+    console.log('addonProducts available:', addonProducts.length);
+    
+    // Add selected addons - use addonProducts (dynamic WooCommerce data) instead of staticAddons
     selectedAddons.forEach(selection => {
-      const addon = staticAddons.find(a => a.id === selection.id);
+      console.log(`Looking for addon: ${selection.id}`);
+      
+      // First try to find in dynamic addon products (from WooCommerce)
+      let addon = addonProducts.find(a => a.id === selection.id);
+      
+      // Fallback to static addons if not found in dynamic data
+      if (!addon) {
+        addon = staticAddons.find(a => a.id === selection.id);
+        console.log(`Addon ${selection.id} not found in dynamic data, using static:`, addon ? 'found' : 'not found');
+      } else {
+        console.log(`Found addon ${selection.id} in dynamic data:`, addon.name);
+      }
+      
       if (addon) {
+        // Handle unit price properly - extract the correct context price
+        let unitPrice = 0;
+        if (typeof addon.unitPrice === 'object' && addon.unitPrice !== null) {
+          unitPrice = addon.unitPrice[context] || addon.unitPrice.residential || 0;
+        } else if (typeof addon.unitPrice === 'number') {
+          unitPrice = addon.unitPrice;
+        }
+        
+        console.log(`Adding ${addon.name} with price ${unitPrice} for context ${context}`);
+        
         cart.push({
           name: addon.name,
           qty: selection.quantity || selection.qty || 1,
-          unitPrice: addon.unitPrice,
-          description: addon.summary || ''
+          unitPrice: unitPrice, // Use the extracted price, not the object
+          description: addon.summary || addon.description || ''
         });
+      } else {
+        console.warn(`Addon not found: ${selection.id}`);
       }
     });
     
+    console.log('Final cart:', cart);
+    console.log('=====================================');
     return cart;
   };
 
