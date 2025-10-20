@@ -1,18 +1,22 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import AlarmPage from './pages/AlarmPage';
-import AjaxHub2Page from './pages/AjaxHub2Page';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import AlarmPage from './pages/AlarmPage'
+import AjaxHub2Page from './pages/AjaxHub2Page'
 
 function App() {
+  console.log('🚀 App component rendering')
+  console.log('📍 Current URL:', window.location.href)
+  console.log('📍 Current pathname:', window.location.pathname)
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/alarm" replace />} />
-        <Route path="/alarm" element={<AlarmPage />} />
-        <Route path="/ajax-hub-2" element={<AjaxHub2Page />} />
-      </Routes>
-    </Router>
-  );
+    <div className="cheap-alarms-app">
+      <Router basename="">
+        <Routes>
+          {/* Catch-all route to display AlarmPage for any URL */}
+          <Route path="*" element={<AlarmPage />} />
+        </Routes>
+      </Router>
+    </div>
+  )
 }
 
-export default App;
+export default App

@@ -1,0 +1,22 @@
+{
+  "src/lib/ghl-api.js": {
+    "file": "assets/ghl-api-t_ENe9On.js",
+    "name": "ghl-api",
+    "src": "src/lib/ghl-api.js",
+    "isDynamicEntry": true
+  },
+  "src/main.jsx": {
+    "file": "assets/main-CM1XquSy.js",
+    "name": "main",
+    "src": "src/main.jsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/lib/ghl-api.js",
+      "src/lib/ghl-api.js",
+      "src/lib/ghl-api.js"
+    ],
+    "css": [
+      "assets/main-D-FSLly8.css"
+    ]
+  }
+}
