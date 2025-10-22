@@ -567,7 +567,7 @@ export function AddOnsSection({
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Add-Ons & Upgrades</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground text-center w-full">
             Customize your security system with additional sensors and features
           </p>
         </div>
@@ -636,7 +636,7 @@ export function AddOnsSection({
           <div className="space-y-6">
             <CapacityMeter limits={capacityLimits} violations={validation.violations} />
 
-            <Card className="sticky top-4">
+            <Card className="sticky top-4 mb-20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-primary" />
