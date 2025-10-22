@@ -2,53 +2,201 @@
 @tailwind components;
 @tailwind utilities;
 
-/* WordPress CSS Isolation - Wrap all styles in .cheap-alarms-app */
+/* WordPress Style Isolation - Prevent WordPress styles from affecting our React app */
 .cheap-alarms-app {
-  /* Reset WordPress styles that might interfere */
+  /* Reset WordPress font styles */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  font-weight: 400 !important;
+  
+  /* Reset WordPress spacing */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Ensure our styles take precedence */
   all: initial;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-  
-  /* Re-establish our CSS custom properties */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 1%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 1%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 1%;
-  --primary: 342 55% 55%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 188 68% 37%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 60 1% 51%;
-  --muted-foreground: 0 0% 1%;
-  --accent: 188 68% 37%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 60 1% 51%;
-  --input: 60 1% 51%;
-  --ring: 342 55% 55%;
-  --radius: 0.5rem;
-  
-  /* Establish our own styling context */
-  display: block;
-  box-sizing: border-box;
-  line-height: 1.5;
-  font-weight: 400;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  min-height: 100vh;
-  width: 100%;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
 }
 
-/* Ensure all child elements inherit our box-sizing */
-.cheap-alarms-app *,
-.cheap-alarms-app *::before,
-.cheap-alarms-app *::after {
+.cheap-alarms-app * {
+  /* Reset all child elements */
   box-sizing: border-box;
+}
+
+/* Ensure Tailwind styles work properly within our isolated container */
+.cheap-alarms-app .text-sm { font-size: 0.875rem !important; }
+.cheap-alarms-app .text-base { font-size: 1rem !important; }
+.cheap-alarms-app .text-lg { font-size: 1.125rem !important; }
+.cheap-alarms-app .text-xl { font-size: 1.25rem !important; }
+.cheap-alarms-app .text-2xl { font-size: 1.5rem !important; }
+.cheap-alarms-app .text-3xl { font-size: 1.875rem !important; }
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* CheapAlarms Brand Colors */
+    --black: 0 0% 1%;           /* #020202 */
+    --pink: 343 49% 58%;        /* #c95375 */
+    --teal: 188 52% 37%;        /* #288896 */
+    --teal-dark: 190 100% 20%;  /* #005667 */
+    --ash: 60 1% 51%;           /* #838381 */
+    --pink-bright: 320 100% 70%; /* #ff66c4 */
+    --teal-new: 188 98% 34%;    /* #018295 */
+
+    /* Semantic Tokens - White Background Theme */
+    --background: 0 0% 100%;     /* White background */
+    --foreground: 0 0% 3.9%;     /* Dark text */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    
+    --primary: var(--pink);
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 343 49% 52%;
+    
+    --secondary: var(--teal);
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 96.1%;
+    --muted-foreground: var(--ash);
+    
+    --accent: var(--pink-bright);
+    --accent-foreground: 0 0% 9%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: hsl(var(--ash) / 0.2);
+    --input: hsl(var(--ash) / 0.15);
+    --ring: var(--teal-new);
+    --focus: var(--teal-new);
+    
+    /* Custom design tokens */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--pink)), hsl(var(--pink-bright)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(0 0% 96%));
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+    --shadow-elevated: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
+    
+    /* Capacity meter colors */
+    --capacity-safe: var(--teal);
+    --capacity-warning: 45 100% 45%;
+    --capacity-danger: var(--pink-bright);
+    
+    /* Progress bars */
+    --progress-track: hsl(var(--ash) / 0.2);
+    --progress-safe: var(--teal);
+    --progress-warning: 45 100% 45%;
+    --progress-danger: var(--pink-bright);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* WordPress Style Protection */
+.cheap-alarms-app {
+  /* Reset WordPress styles */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+  line-height: 1.5 !important;
+  
+  /* Override common WordPress text styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit !important;
+    line-height: inherit !important;
+    margin: 0 !important;
+    font-weight: inherit !important;
+  }
+  
+  p {
+    font-size: inherit !important;
+    line-height: inherit !important;
+    margin: 0 !important;
+  }
+  
+  button {
+    font-family: inherit !important;
+    font-size: inherit !important;
+  }
+  
+  /* Ensure Tailwind classes work */
+  .text-xs { font-size: 0.75rem !important; line-height: 1rem !important; }
+  .text-sm { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+  .text-base { font-size: 1rem !important; line-height: 1.5rem !important; }
+  .text-lg { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+  .text-xl { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+  .text-2xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+  .text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+  .text-4xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
+  .text-5xl { font-size: 3rem !important; line-height: 1 !important; }
+  
+  /* Font weights */
+  .font-normal { font-weight: 400 !important; }
+  .font-medium { font-weight: 500 !important; }
+  .font-semibold { font-weight: 600 !important; }
+  .font-bold { font-weight: 700 !important; }
 }
 
 /* Dark theme for our app */

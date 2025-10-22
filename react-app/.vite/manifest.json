@@ -6,7 +6,7 @@
     "isDynamicEntry": true
   },
   "src/main.jsx": {
-    "file": "assets/main-CM1XquSy.js",
+    "file": "assets/main-18tU4FEq.js",
     "name": "main",
     "src": "src/main.jsx",
     "isEntry": true,
@@ -16,7 +16,7 @@
       "src/lib/ghl-api.js"
     ],
     "css": [
-      "assets/main-D-FSLly8.css"
+      "assets/main-D9-UKcI_.css"
     ]
   }
 }
