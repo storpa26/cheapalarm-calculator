@@ -55,11 +55,7 @@ const DialogContent = React.forwardRef(({
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
       <div
         ref={ref}
-        className={`modal-surface text-white relative rounded-3xl overflow-hidden border border-primary/20 shadow-xl max-w-lg w-full max-h-[85vh] overflow-auto p-6 ${className}`}
-        style={{
-          background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))',
-          borderRadius: '28px'
-        }}
+        className={`bg-card text-foreground relative rounded-xl overflow-hidden border border-border shadow-elevated max-w-lg w-full max-h-[85vh] overflow-auto p-6 ${className}`}
         {...props}
       >
         <button

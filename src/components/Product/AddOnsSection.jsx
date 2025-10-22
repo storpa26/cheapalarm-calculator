@@ -700,24 +700,6 @@ export function AddOnsSection({
                   )}
                 </div>
 
-                <Button 
-                  onClick={handleAddToCart}
-                  disabled={validation?.violations?.length > 0 || isLoading || isAddingToCart}
-                  size="lg"
-                  className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
-                >
-                  {isAddingToCart ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Adding to Cart...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-4 w-4 mr-2" />
-                      Add to Cart
-                    </>
-                  )}
-                </Button>
 
                 {shouldShowPrice ? (
                   <p className="text-xs text-muted-foreground text-center">

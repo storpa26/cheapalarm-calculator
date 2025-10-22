@@ -248,36 +248,32 @@ export default function AlarmPage() {
           </div>
         </section>
 
-        {/* Add-ons Section - Show only after form submission */}
-        {formData && (
-          <div ref={addOnsRef}>
-            <AddOnsSection
-              context={context}
-              productType={productType}
-              selectedAddons={selectedAddons}
-              onUpdateAddons={handleAddonsUpdate}
-              onAddonProductsChange={handleAddonProductsChange}
-              estimatedTotal={estimatedTotal}
-              onAddToQuote={handleAddToQuote}
-              showPrice={!SHOW_PRICE}
-            />
-          </div>
-        )}
+        {/* Add-ons Section - Always visible for testing */}
+        <div ref={addOnsRef}>
+          <AddOnsSection
+            context={context}
+            productType={productType}
+            selectedAddons={selectedAddons}
+            onUpdateAddons={handleAddonsUpdate}
+            onAddonProductsChange={handleAddonProductsChange}
+            estimatedTotal={estimatedTotal}
+            onAddToQuote={handleAddToQuote}
+            showPrice={!SHOW_PRICE}
+          />
+        </div>
       </main>
 
-      {/* Sticky Cart Bar - Only show after form submission */}
-      {formData && (
-        <StickyCartBar
-          selectedAddons={selectedAddons}
-          estimatedTotal={estimatedTotal}
-          onAddToCart={handleAddToQuote}
-          isLoading={isCreatingEstimate}
-          buttonText={isCreatingEstimate ? "Creating Estimate..." : "Add to Cart"}
-          context={context}
-          productType={productType}
-          showPrice={!SHOW_PRICE}
-        />
-      )}
+      {/* Sticky Cart Bar */}
+      <StickyCartBar
+        selectedAddons={selectedAddons}
+        estimatedTotal={estimatedTotal}
+        onAddToCart={handleAddToQuote}
+        isLoading={isCreatingEstimate}
+        buttonText={isCreatingEstimate ? "Creating Estimate..." : "Get Your Quote"}
+        context={context}
+        productType={productType}
+        showPrice={!SHOW_PRICE}
+      />
     </div>
   );
 }

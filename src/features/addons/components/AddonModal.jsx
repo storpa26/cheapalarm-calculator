@@ -25,7 +25,6 @@ export function AddonModal({
   // Sync local state when addon or currentQuantity changes
   useEffect(() => {
     setQuantity(currentQuantity);
-    setInclude(currentQuantity > 0);
   }, [addon?.id, currentQuantity]);
 
   if (!addon) return null;
@@ -46,7 +45,6 @@ export function AddonModal({
     const canIncrement = validation.canIncrement(addon.id, quantity);
     if (canIncrement.allowed) {
       setQuantity(quantity + 1);
-      if (!include) setInclude(true);
       setIncrementError(null);
     } else {
       setIncrementError(canIncrement.reason || 'Cannot increase quantity');
@@ -58,7 +56,6 @@ export function AddonModal({
     
     if (quantity > addon.qtyMin) {
       setQuantity(quantity - 1);
-      if (quantity - 1 === 0) setInclude(false);
       setIncrementError(null);
     }
   };
@@ -88,9 +85,15 @@ export function AddonModal({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Product Details</TabsTrigger>
-            <TabsTrigger value="help">Do I Need This?</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 gap-2 p-0">
+            <TabsTrigger value="details" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Product Details
+            </TabsTrigger>
+            <TabsTrigger value="help" className="flex items-center gap-2">
+              <HelpCircle className="w-4 h-4" />
+              Do I Need This?
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
@@ -106,26 +109,26 @@ export function AddonModal({
               </ul>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Technical Specifications</h4>
+            <div className="bg-primary/10 rounded-2xl p-4 border border-primary/20">
+              <h4 className="font-semibold mb-2 text-primary">Technical Specifications</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {addon.consumesInput && (
                   <div>
-                    <span className="text-muted-foreground">Uses Input Zone:</span>
+                    <span className="text-primary">Uses Input Zone:</span>
                     <span className="ml-2 font-medium">Yes</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-muted-foreground">Power Draw:</span>
+                  <span className="text-primary">Power Draw:</span>
                   <span className="ml-2 font-medium">{addon.powerMilliAmps} mA</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Type:</span>
+                  <span className="text-primary">Type:</span>
                   <span className="ml-2 font-medium capitalize">{addon.type}</span>
                 </div>
                 {addon.isTouchscreen && (
                   <div>
-                    <span className="text-muted-foreground">Touchscreen:</span>
+                    <span className="text-primary">Touchscreen:</span>
                     <span className="ml-2 font-medium">Yes</span>
                   </div>
                 )}
@@ -142,9 +145,9 @@ export function AddonModal({
               
               <div className="space-y-4">
                 {getHelpScenarios(addon.id).map((scenario, index) => (
-                  <div key={index} className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-medium mb-2">{scenario.title}</h4>
-                    <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                  <div key={index} className="bg-primary/10 rounded-2xl p-4 border border-primary/20">
+                    <h4 className="font-semibold mb-2 text-primary">{scenario.title}</h4>
+                    <p className="text-sm">{scenario.description}</p>
                   </div>
                 ))}
               </div>
@@ -167,19 +170,7 @@ export function AddonModal({
         </Tabs>
 
         <div className="border-t pt-6 space-y-4">
-          {/* MOVE: Include toggle from footer to here - ABOVE quantity */}
-          <div className="flex items-center justify-between">
-            <label htmlFor="include-switch" className="text-sm font-medium">Include in my package</label>
-            <Switch 
-              id="include-switch"
-              checked={include} 
-              onCheckedChange={setInclude}
-              aria-describedby="include-description"
-            />
-          </div>
-          <p id="include-description" className="sr-only">
-            Toggle to include or exclude this add-on from your package
-          </p>
+          {/* Include toggle removed per redesign. Quantity only retained. */}
 
           {/* Existing quantity controls stay here */}
           <div className="flex items-center justify-between">
@@ -228,7 +219,7 @@ export function AddonModal({
 
           {/* Footer - REMOVE the toggle from here since it's moved above */}
           <div className="space-y-4">
-            {shouldShowPrice && include && quantity > 0 && (
+            {shouldShowPrice && quantity > 0 && (
               <div className="bg-primary/5 rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Total for this item:</span>

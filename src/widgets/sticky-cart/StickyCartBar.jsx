@@ -16,7 +16,7 @@ export function StickyCartBar({
   hidePrice = false,
   hideContextBadge = false,
   isLoading: externalIsLoading = false,
-  buttonText = 'Add to Cart'
+  buttonText = 'Get Your Quote'
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const canShowPrice = (showPrice ?? SHOW_PRICE) && !hidePrice;
@@ -43,7 +43,7 @@ export function StickyCartBar({
   };
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-50 ${className}`}>
+    <div className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-[60] ${className}`}>
       <div className="container mx-auto max-w-6xl px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Cart Summary */}
