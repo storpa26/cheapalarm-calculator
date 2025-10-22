@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { ContextSwitcher } from '../components/Product/ContextSwitcher';
 import { AddOnsSection } from '../components/Product/AddOnsSection';
-import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
+import { LeadCaptureForm } from '../components/Product/LeadCaptureForm.tsx';
 import { StickyCartBar } from '../widgets/sticky-cart/StickyCartBar';
 import { SHOW_PRICE } from '../shared/config/flags';
 import { addons as staticAddons } from '../data/addons';

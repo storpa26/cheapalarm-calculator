@@ -3,11 +3,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../shared/ui/card';
 import { Button } from '../../shared/ui/button';
 import { Input } from '../../shared/ui/input';
 import { Alert, AlertDescription } from '../../shared/ui/alert';
-import { SHOW_PRICE } from '../../shared/config/flags';
 import { ShoppingCart, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from 'lucide-react';
 
-export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext, showPrice }) {
-  const [formData, setFormData] = useState({
+export interface LeadData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  postcode: string;
+  productContext?: {
+    productType: string;
+    context: string;
+    selectedAddons?: string[];
+    estimatedTotal?: number;
+    productName?: string;
+  };
+  propertyContext?: {
+    propertyType: string; // residential, retail, office, warehouse
+    buildingType: string; // single/multi storey, ceiling type, etc.
+    storeyType?: string;
+    ceilingType?: string;
+  };
+}
+
+interface LeadCaptureFormProps {
+  onSubmit: (leadData: LeadData) => void;
+  isLoading?: boolean;
+  productContext?: {
+    productType: string;
+    context: string;
+    selectedAddons?: string[];
+    estimatedTotal?: number;
+    productName?: string;
+  };
+  propertyContext?: {
+    propertyType: string;
+    buildingType: string;
+    storeyType?: string;
+    ceilingType?: string;
+  };
+}
+
+export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext }: LeadCaptureFormProps) {
+  const [formData, setFormData] = useState<LeadData>({
     name: '',
     email: '',
     phone: '',
@@ -16,13 +54,12 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
     productContext,
     propertyContext
   });
-  const [errors, setErrors] = useState({});
-  const [submitStatus, setSubmitStatus] = useState('idle');
+  const [errors, setErrors] = useState<Partial<Record<keyof LeadData, string>>>({});
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
-  const shouldShowPrice = showPrice ?? SHOW_PRICE;
 
   // Validation functions
-  const validatePhone = (phone) => {
+  const validatePhone = (phone: string): boolean => {
     // Australian phone number validation (mobile and landline)
     const mobileRegex = /^(\+61|0)[4-5]\d{8}$/;
     const landlineRegex = /^(\+61|0)[2-8]\d{8}$/;
@@ -30,13 +67,13 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
     return mobileRegex.test(cleanPhone) || landlineRegex.test(cleanPhone);
   };
 
-  const validatePostcode = (postcode) => {
+  const validatePostcode = (postcode: string): boolean => {
     // Australian postcode validation (4 digits)
     return /^\d{4}$/.test(postcode);
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof LeadData, string>> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -68,7 +105,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -79,37 +116,31 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
     setSubmitMessage('');
 
     try {
-      // Import the GHL API functions
+      // Import the GHL API function
       const { submitLeadToGHL } = await import('../../lib/ghl-api');
       
-      // For the new workflow, form submission only creates/updates the contact
+      // Submit to GoHighLevel
       const result = await submitLeadToGHL(formData);
       
       if (result.success) {
         setSubmitStatus('success');
         const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
-        let message = isGHLDisabled 
-          ? '🔧 Development Mode: Contact saved successfully (GHL integration disabled)'
-          : `✅ Thank you! Your contact information has been saved. Now click "Add to Cart" to create your estimate.`;
-        
+        const message = isGHLDisabled 
+          ? '🔧 Development Mode: Form submitted successfully (GHL integration disabled)'
+          : '🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.';
         setSubmitMessage(message);
         // Call the original onSubmit for any additional handling
         onSubmit(formData);
       } else {
-        // Surface server error details if available
-        const errMsg = result.error || 'Failed to save contact information';
-        setSubmitStatus('error');
-        setSubmitMessage(errMsg);
-        return;
+        throw new Error('Failed to submit lead');
       }
     } catch (error) {
-      console.error('Form submission error:', error);
       setSubmitStatus('error');
-      setSubmitMessage('Sorry, there was an error saving your information. Please try again.');
+      setSubmitMessage(error instanceof Error ? error.message : 'An error occurred. Please try again.');
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof LeadData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -125,13 +156,13 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center pb-4">
+    <Card className="w-full max-w-md mx-auto shadow-elevated border border-primary/20">
+      <CardHeader className="text-center pb-4 bg-gradient-brand text-primary-foreground rounded-t-lg">
         <CardTitle className="flex items-center justify-center gap-2 text-lg">
           <ShoppingCart className="h-5 w-5" />
           Get Your Quote
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-primary-foreground/90">
           {productContext ? 
             `Get pricing for ${productContext.productType} ${productContext.context} system` :
             'Get your personalized quote and explore add-on options'
@@ -248,14 +279,14 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
 
           {/* Product & Property Context Display */}
           {(productContext || propertyContext) && (
-            <div className="bg-muted/50 p-3 rounded-lg text-sm">
+            <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg text-sm">
               <p className="font-medium mb-2">Quote Details:</p>
               
               {productContext && (
                  <div className="mb-2">
-                   <p className="text-muted-foreground">
+                   <p className="text-foreground">
                      <span className="font-medium">System:</span> {productContext.productName || `${productContext.productType} ${productContext.context} System`}
-                     {shouldShowPrice && productContext.estimatedTotal && (
+                     {productContext.estimatedTotal && (
                        <span className="font-medium text-primary ml-2">
                          Est. ${productContext.estimatedTotal.toLocaleString()}
                        </span>
@@ -266,7 +297,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
               
               {propertyContext && (
                 <div>
-                  <p className="text-muted-foreground">
+                  <p className="text-foreground">
                     <span className="font-medium">Property:</span> {propertyContext.propertyType}
                     {propertyContext.buildingType && (
                       <span className="ml-1">({propertyContext.buildingType})</span>
@@ -279,7 +310,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
           
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full bg-gradient-brand hover:opacity-95"
             size="lg"
             disabled={isLoading || submitStatus === 'success'}
           >

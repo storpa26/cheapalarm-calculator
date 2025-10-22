@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 // Replace dynamic Woo add-ons with static dummy section
 import AjaxHub2DummySection from '../components/AjaxHub2DummySection';
-import { LeadCaptureForm } from '../components/Product/LeadCaptureForm';
+import { LeadCaptureForm } from '../components/Product/LeadCaptureForm.tsx';
 import { SHOW_PRICE } from '../shared/config/flags';
 import { StickyCartBar } from '../widgets/sticky-cart/StickyCartBar';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
