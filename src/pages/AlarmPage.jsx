@@ -9,6 +9,7 @@ import { addons as staticAddons } from '../data/addons';
 export default function AlarmPage() {
   const [productType, setProductType] = useState('wireless');
   const [context, setContext] = useState('residential');
+  const [storeyType, setStoreyType] = useState('single');
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [addonProducts, setAddonProducts] = useState([]);
   const [estimatedTotal, setEstimatedTotal] = useState(0);
@@ -45,6 +46,11 @@ export default function AlarmPage() {
     setAddonProducts(products);
   }, []);
 
+  const handleStoreyTypeChange = (type) => {
+    setStoreyType(type);
+    setProductType(type === 'single' ? 'hardwired' : 'wireless');
+  };
+
   const handleAddToQuote = async () => {
     if (!formData) {
       alert('Please fill out the form first to get your quote.');
@@ -69,7 +75,8 @@ export default function AlarmPage() {
         },
         propertyContext: {
           propertyType: context,
-          buildingType: 'standard'
+          buildingType: 'standard',
+          storeyType: storeyType
         }
       };
 
@@ -201,50 +208,58 @@ export default function AlarmPage() {
       <main className="pb-24">
         {/* Product Type Selection removed per request (quiz will decide later) */}
 
-        {/* Context Selection */}
+        {/* Combined Property Type and Quote Form Section */}
         <section className="py-8 px-4">
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-4">Property Type</h2>
-              <p className="text-muted-foreground">
-                Tell us about your property to get accurate pricing
-              </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+              {/* Property Type */}
+              <div className="space-y-8">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-4">Property Type</h2>
+                  <p className="text-muted-foreground">
+                    Tell us about your property to get accurate pricing
+                  </p>
+                </div>
+                <div className="flex justify-center">
+                  <ContextSwitcher 
+                    currentContext={context} 
+                    onContextChange={setContext} 
+                    assumptions={undefined}
+                    storeyType={storeyType}
+                    onStoreyTypeChange={handleStoreyTypeChange}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              
+              {/* Lead Capture Form */}
+              <div className="space-y-8">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-4">Get Your Quote</h2>
+                  <p className="text-muted-foreground">
+                    Enter your details below to start configuring your security system
+                  </p>
+                </div>
+                <LeadCaptureForm
+                  onSubmit={handleLeadSubmit}
+                  isLoading={isSubmittingLead}
+                  productContext={{
+                    productType,
+                    context,
+                    selectedAddons: selectedAddons.map(addon => addon.id),
+                    estimatedTotal,
+                    productName: `${productType.charAt(0).toUpperCase() + productType.slice(1)} Alarm System`,
+                    cart: buildCartFromSelectedAddons(selectedAddons, context, productType)
+                  }}
+                  propertyContext={{
+                    propertyType: context,
+                    buildingType: 'standard',
+                    storeyType: storeyType
+                  }}
+                  showPrice={!SHOW_PRICE}
+                />
+              </div>
             </div>
-            <div className="flex justify-center">
-              <ContextSwitcher 
-                currentContext={context} 
-                onContextChange={setContext} 
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Lead Capture Form - Show first */}
-        <section className="py-16 px-4">
-          <div className="container mx-auto max-w-2xl">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-4">Get Your Quote</h2>
-              <p className="text-muted-foreground">
-                Enter your details below to start configuring your security system
-              </p>
-            </div>
-            <LeadCaptureForm
-              onSubmit={handleLeadSubmit}
-              isLoading={isSubmittingLead}
-              productContext={{
-                productType,
-                context,
-                selectedAddons: selectedAddons.map(addon => addon.id),
-                estimatedTotal,
-                productName: `${productType.charAt(0).toUpperCase() + productType.slice(1)} Alarm System`,
-                cart: buildCartFromSelectedAddons(selectedAddons, context, productType)
-              }}
-              propertyContext={{
-                propertyType: context,
-                buildingType: 'standard'
-              }}
-              showPrice={!SHOW_PRICE}
-            />
           </div>
         </section>
 

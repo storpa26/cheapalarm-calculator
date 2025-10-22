@@ -1,8 +1,9 @@
 import { Button } from '../../shared/ui/button';
 import { Badge } from '../../shared/ui/badge';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../../shared/ui/accordion';
+import { Card, CardContent } from '../../shared/ui/card';
 import { useEffect, useRef, useState } from 'react';
-import { Settings, Home, Store } from 'lucide-react';
+import { Settings, Home, Store, Building2 } from 'lucide-react';
 
 const contextLabels = {
   residential: 'Residential',
@@ -23,19 +24,53 @@ export function ContextSwitcher({
   currentContext, 
   onContextChange, 
   assumptions,
-  className 
+  className,
+  storeyType,
+  onStoreyTypeChange
 }) {
   const contexts = ['residential', 'retail'];
 
+  // Building type options (matches screenshot style)
+  const storeyOptions = [
+    {
+      type: 'single',
+      label: 'Single Storey',
+      description: 'One level with pitched/tiled roof',
+      icon: Home,
+      recommended: 'Hardwired System'
+    },
+    {
+      type: 'multi',
+      label: 'Multi Storey',
+      description: 'Two or more levels',
+      icon: Building2,
+      recommended: 'Wireless System'
+    }
+  ];
+
+  // Compute assumption chips with storey type reflected for mobile clarity
+  const baseChips = (assumptions || defaultChips[currentContext] || []).slice();
+  let computedChips = baseChips;
+  if (currentContext === 'residential') {
+    const idx = computedChips.findIndex(c => c.toLowerCase().includes('storey'));
+    if (idx !== -1) computedChips[idx] = storeyType === 'multi' ? 'Multi storey' : 'Single storey';
+    else computedChips.push(storeyType === 'multi' ? 'Multi storey' : 'Single storey');
+  } else {
+    const idx = computedChips.findIndex(c => c.toLowerCase().includes('storey') || c.toLowerCase().includes('ground floor'));
+    if (idx !== -1) computedChips[idx] = storeyType === 'multi' ? 'Multi storey' : 'Ground floor';
+    else computedChips.push(storeyType === 'multi' ? 'Multi storey' : 'Ground floor');
+  }
+
   return (
     <div className={`rounded-3xl overflow-hidden border border-primary/20 shadow-sm p-6 ${className || ''}`} style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--secondary)/0.06))', borderRadius: '28px' }}>
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Property Type & Assumptions</h3>
         </div>
 
-        <div className="flex justify-center gap-6">
+        {/* Context selector */}
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
           {contexts.map(context => {
             const Icon = contextIcons[context];
             const isActive = context === currentContext;
@@ -82,10 +117,69 @@ export function ContextSwitcher({
           })}
         </div>
 
+        {/* Building type selector cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {storeyOptions.map((option) => {
+            const Icon = option.icon;
+            const isSelected = storeyType === option.type;
+            return (
+              <Card
+                key={option.type}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => onStoreyTypeChange && onStoreyTypeChange(option.type)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className={`p-3 rounded-full ${
+                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">{option.label}</h4>
+                      <p className="text-sm text-muted-foreground mb-2">{option.description}</p>
+                      <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {option.recommended}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className={`${isSelected ? 'bg-primary hover:bg-primary-hover text-primary-foreground' : 'bg-primary/20 hover:bg-primary/30 text-primary'} w-full`}
+                      onClick={(e) => { e.stopPropagation(); onStoreyTypeChange && onStoreyTypeChange(option.type); }}
+                    >
+                      {isSelected ? 'Selected' : 'Select'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Mobile-friendly quick buttons */}
+        <div className="grid grid-cols-2 gap-3 sm:hidden">
+          <Button
+            className={`${storeyType === 'single' ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'} rounded-full py-3`}
+            onClick={() => onStoreyTypeChange && onStoreyTypeChange('single')}
+          >
+            Single Storey
+          </Button>
+          <Button
+            className={`${storeyType === 'multi' ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'} rounded-full py-3`}
+            onClick={() => onStoreyTypeChange && onStoreyTypeChange('multi')}
+          >
+            Multi Storey
+          </Button>
+        </div>
+
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Current Assumptions:</h4>
           <div className="flex flex-wrap gap-2">
-            {(assumptions || defaultChips[currentContext] || []).map((assumption, index) => (
+            {computedChips.map((assumption, index) => (
               <Badge key={index} variant="outline" className="text-xs bg-primary/5 border-primary/30 text-primary">
                 {assumption}
               </Badge>
