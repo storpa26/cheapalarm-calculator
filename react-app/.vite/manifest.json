@@ -6,17 +6,16 @@
     "isDynamicEntry": true
   },
   "src/main.jsx": {
-    "file": "assets/main-tR1-lhEm.js",
+    "file": "assets/main-BWXkoIN_.js",
     "name": "main",
     "src": "src/main.jsx",
     "isEntry": true,
     "dynamicImports": [
       "src/lib/ghl-api.js",
-      "src/lib/ghl-api.js",
       "src/lib/ghl-api.js"
     ],
     "css": [
-      "assets/main-D9-UKcI_.css"
+      "assets/main-CDu1zJJR.css"
     ]
   }
 }
