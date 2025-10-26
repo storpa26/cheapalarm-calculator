@@ -167,6 +167,28 @@ async function upsertContact(payload) {
   const firstName = nameParts[0] || '';
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
+  // First, try to find existing contact by email
+  try {
+    const searchResp = await fetch(`https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(payload.email)}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${GHL_TOKEN}`,
+        'Content-Type': 'application/json',
+        Version: '2021-07-28',
+      },
+    });
+
+    if (searchResp.ok) {
+      const searchResult = await searchResp.json();
+      if (searchResult.contact && searchResult.contact.id) {
+        console.log('Found existing contact:', searchResult.contact.id);
+        return { success: true, contactId: searchResult.contact.id };
+      }
+    }
+  } catch (searchErr) {
+    console.warn('Contact search failed, proceeding with creation:', searchErr.message);
+  }
+
   const contactData = {
     firstName,
     lastName,
@@ -221,6 +243,36 @@ async function upsertContact(payload) {
     try { json = JSON.parse(text); } catch { json = null; }
 
     if (!resp.ok) {
+      // If it's a duplicate contact error, try to find the existing contact
+      if (resp.status === 400 && (text.includes('duplicate') || text.includes('already exists'))) {
+        console.log('Duplicate contact detected, attempting to find existing contact...');
+        
+        // Try alternative search methods
+        try {
+          const searchByEmailResp = await fetch(`https://services.leadconnectorhq.com/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(payload.email)}`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${GHL_TOKEN}`,
+              'Content-Type': 'application/json',
+              Version: '2021-07-28',
+            },
+          });
+
+          if (searchByEmailResp.ok) {
+            const searchData = await searchByEmailResp.json();
+            if (searchData.contacts && searchData.contacts.length > 0) {
+              const existingContact = searchData.contacts.find(c => c.email === payload.email);
+              if (existingContact) {
+                console.log('Found existing contact via search:', existingContact.id);
+                return { success: true, contactId: existingContact.id };
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn('Fallback contact search failed:', fallbackErr.message);
+        }
+      }
+
       const details = json?.error || json?.message || text || 'Unknown error';
       return { success: false, error: `${resp.status} - ${details}` };
     }
@@ -260,7 +312,14 @@ async function createDocument(contactId, payload, docType) {
     name: `${docType === 'estimate' ? 'Estimate' : 'Invoice'} - ${payload.name || 'Customer'}`,
     title: docType === 'estimate' ? 'ESTIMATE' : 'INVOICE',
     businessDetails: { 
-      name: 'Cheap Alarms'
+      name: 'Cheap Alarms',
+      address: {
+        addressLine1: 'Cheap Alarms Pty Ltd',
+        city: 'Brisbane',
+        state: 'QLD',
+        postalCode: '4000',
+        countryCode: 'AU'
+      }
     },
     currency: 'USD',
     items: lineItems,
@@ -270,7 +329,14 @@ async function createDocument(contactId, payload, docType) {
       id: contactId,
       name: payload.name,
       email: payload.email,
-      phoneNo: payload.phone?.startsWith('+') ? payload.phone : `+61${payload.phone?.replace(/^0/, '') || ''}`
+      phoneNo: payload.phone?.startsWith('+') ? payload.phone : `+61${payload.phone?.replace(/^0/, '') || ''}`,
+      address: {
+        addressLine1: payload.address || 'Address not provided',
+        city: 'TBD',
+        state: 'TBD',
+        postalCode: payload.postcode || 'TBD',
+        countryCode: 'AU'
+      }
     },
     issueDate,
     expiryDate,
