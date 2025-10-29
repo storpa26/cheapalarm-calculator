@@ -3,10 +3,11 @@ import { Button } from '../shared/ui/button';
 import { Card, CardContent } from '../shared/ui/card';
 import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Upload, X, Camera, AlertCircle } from 'lucide-react';
+import { UploadStatusIndicator } from './UploadProgress';
 
 // Photo dropzone component for uploading and managing photos
 // Supports drag & drop, file selection, and camera capture
-export function PhotoDropzone({ photos = [], onChange }) {
+export function PhotoDropzone({ photos = [], onChange, compact = false, uploadStatuses = {} }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -133,67 +134,130 @@ export function PhotoDropzone({ photos = [], onChange }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Upload Area */}
       <div
-        className={`
-          relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer
-          transition-all duration-300 ease-in-out
-          ${isDragOver 
-            ? 'border-primary bg-primary/5 scale-[1.02] shadow-lg' 
-            : 'border-border/40 hover:border-primary/60 hover:bg-muted/20'
-          }
-        `}
+        style={{
+          border: '2px dashed #d1d5db',
+          borderRadius: '12px',
+          padding: compact ? '24px 16px' : '48px 24px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          backgroundColor: isDragOver ? '#f9fafb' : '#ffffff',
+          borderColor: isDragOver ? '#c95375' : '#d1d5db',
+          transition: 'all 0.2s ease-in-out'
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="space-y-6">
-          <div className="mx-auto w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center">
-            <Upload className="w-8 h-8 text-secondary" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? '16px' : '24px' }}>
+          <div style={{
+            width: compact ? '48px' : '64px',
+            height: compact ? '48px' : '64px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Upload style={{ width: compact ? '24px' : '32px', height: compact ? '24px' : '32px', color: '#6b7280' }} />
           </div>
           
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">
-              Upload Photos
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <h3 style={{ 
+              fontSize: compact ? '14px' : '18px', 
+              fontWeight: '600', 
+              color: '#111827', 
+              margin: '0' 
+            }}>
+              {compact ? 'Upload Photos' : 'Drag and drop images here'}
             </h3>
-            <p className="text-base text-muted-foreground font-medium">
-              Drag and drop images here, or click to select files
+            <p style={{ 
+              fontSize: compact ? '12px' : '14px', 
+              color: '#6b7280', 
+              margin: '0',
+              fontWeight: '500'
+            }}>
+              {compact ? 'or click to browse' : 'or click to browse'}
             </p>
           </div>
           
-          <div className="flex gap-4 justify-center">
-            <Button
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 fileInputRef.current?.click();
               }}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium border-border/40 hover:border-primary/60 hover:text-primary transition-colors"
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: compact ? '6px 12px' : '8px 16px',
+                fontSize: compact ? '12px' : '14px',
+                fontWeight: '500',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.borderColor = '#9ca3af';
+                e.target.style.color = '#111827';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.color = '#374151';
+              }}
             >
-              <Upload className="w-4 h-4" />
+              <Upload style={{ width: '14px', height: '14px' }} />
               Choose Files
-            </Button>
+            </button>
             
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 handleCameraCapture();
               }}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium border-border/40 hover:border-primary/60 hover:text-primary transition-colors"
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: compact ? '6px 12px' : '8px 16px',
+                fontSize: compact ? '12px' : '14px',
+                fontWeight: '500',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.borderColor = '#9ca3af';
+                e.target.style.color = '#111827';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.color = '#374151';
+              }}
             >
-              <Camera className="w-4 h-4" />
+              <Camera style={{ width: '14px', height: '14px' }} />
               Take Photo
-            </Button>
+            </button>
           </div>
           
-          <p className="text-sm text-muted-foreground font-medium">
+          <p style={{ 
+            fontSize: '10px', 
+            color: '#6b7280', 
+            margin: '0',
+            fontWeight: '500'
+          }}>
             Supports JPG, PNG, GIF. Max 10MB per file.
           </p>
         </div>
@@ -219,43 +283,94 @@ export function PhotoDropzone({ photos = [], onChange }) {
 
       {/* Photo Grid */}
       {photos.length > 0 && (
-        <div className="space-y-6">
-          <h4 className="text-lg font-semibold text-foreground">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <h4 style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#111827',
+            margin: '0'
+          }}>
             Uploaded Photos ({photos.length})
           </h4>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '24px' }}>
             {photos.map((photo) => (
-              <Card key={photo.id} className="overflow-hidden border-border/40 shadow-card rounded-xl">
-                <div className="aspect-square relative group">
+              <div key={photo.id} style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                position: 'relative'
+              }}>
+                <div style={{ aspectRatio: '1 / 1', position: 'relative' }}>
                   <img
                     src={photo.dataUrl}
                     alt={photo.label || 'Uploaded photo'}
-                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  
+
+                  {/* Upload Status Indicator */}
+                  {uploadStatuses[photo.id] && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px'
+                    }}>
+                      <UploadStatusIndicator 
+                        status={uploadStatuses[photo.id].status} 
+                        size="large"
+                      />
+                    </div>
+                  )}
+
                   {/* Remove button */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                  <button
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      backgroundColor: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
                     onClick={() => removePhoto(photo.id)}
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <X style={{ width: '16px', height: '16px' }} />
+                  </button>
                 </div>
-                
+
                 {/* Photo label input */}
-                <div className="p-4">
+                <div style={{ padding: '16px' }}>
                   <input
                     type="text"
                     value={photo.label}
                     onChange={(e) => updatePhotoLabel(photo.id, e.target.value)}
                     placeholder="Photo label..."
-                    className="w-full text-sm font-medium border-0 bg-transparent focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      outline: 'none',
+                      color: '#111827',
+                      '::placeholder': { color: '#9ca3af' }
+                    }}
                   />
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>

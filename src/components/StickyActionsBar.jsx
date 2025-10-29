@@ -5,42 +5,115 @@ import { Save, Upload, Loader2 } from 'lucide-react';
 // Fixed at bottom of page for easy access during photo upload process
 export function StickyActionsBar({ onSave, onSubmit, isSaving, isSubmitting }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/40 shadow-elevated z-50">
-      <div className="container mx-auto px-6 py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <p className="text-sm text-muted-foreground font-medium text-center sm:text-left">
+    <div style={{
+      position: 'fixed',
+      bottom: '0',
+      left: '0',
+      right: '0',
+      backgroundColor: '#ffffff',
+      borderTop: '1px solid #e5e7eb',
+      boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)',
+      zIndex: 50,
+      padding: '24px 0'
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '20px', 
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <p style={{ 
+            fontSize: '12px', 
+            color: '#6b7280', 
+            margin: '0',
+            fontWeight: '500'
+          }}>
             Save your progress regularly. Submit when you're ready to finalize your quote.
           </p>
           
-          <div className="flex gap-4 justify-center sm:justify-end">
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             {/* Save Progress Button */}
-            <Button
-              variant="outline"
+            <button
               onClick={onSave}
               disabled={isSaving || isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium border-border/40 hover:border-primary/60 hover:text-primary transition-colors"
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                cursor: isSaving || isSubmitting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                opacity: isSaving || isSubmitting ? 0.6 : 1
+              }}
+              onMouseOver={(e) => {
+                if (!isSaving && !isSubmitting) {
+                  e.target.style.borderColor = '#9ca3af';
+                  e.target.style.color = '#111827';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!isSaving && !isSubmitting) {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.color = '#374151';
+                }
+              }}
             >
               {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
               ) : (
-                <Save className="w-4 h-4" />
+                <Save style={{ width: '16px', height: '16px' }} />
               )}
               {isSaving ? 'Saving...' : 'Save Progress'}
-            </Button>
+            </button>
 
             {/* Submit Photos Button */}
-            <Button
+            <button
               onClick={onSubmit}
               disabled={isSaving || isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200"
+              style={{
+                backgroundColor: '#c95375',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#ffffff',
+                cursor: isSaving || isSubmitting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                opacity: isSaving || isSubmitting ? 0.6 : 1
+              }}
+              onMouseOver={(e) => {
+                if (!isSaving && !isSubmitting) {
+                  e.target.style.backgroundColor = '#b8456a';
+                  e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!isSaving && !isSubmitting) {
+                  e.target.style.backgroundColor = '#c95375';
+                  e.target.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+                }
+              }}
             >
               {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
               ) : (
-                <Upload className="w-4 h-4" />
+                <Upload style={{ width: '16px', height: '16px' }} />
               )}
               {isSubmitting ? 'Submitting...' : 'Submit Photos'}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
 import { Skeleton } from '../shared/ui/skeleton';
 import { fetchEstimate, saveQuoteData, validateSubmission } from '../lib/quoteStorage';
+import { startUploadSession, uploadPhotosBatch, completeUploadSession, setProgressCallback, retryUpload, cancelAllUploads } from '../lib/uploadApi';
+import { UploadProgress } from '../components/UploadProgress';
 import { useToast } from '../hooks/use-toast';
 import { Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 
@@ -34,6 +36,9 @@ export default function UploadPage() {
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
+  const [uploadProgress, setUploadProgress] = useState([]);
+  const [showUploadProgress, setShowUploadProgress] = useState(false);
 
   console.log('UploadPage rendered with estimateId:', estimateId);
 
@@ -113,7 +118,31 @@ export default function UploadPage() {
     setTimeout(() => setIsSaving(false), 500);
   };
 
-  // Submit photos (simplified version - no actual upload API)
+  // Set up progress callback
+  useEffect(() => {
+    setProgressCallback((progressData) => {
+      setUploadProgress(prev => {
+        const existing = prev.find(p => p.photoId === progressData.photoId);
+        if (existing) {
+          return prev.map(p => 
+            p.photoId === progressData.photoId 
+              ? { ...p, progress: progressData.progress, status: progressData.status }
+              : p
+          );
+        } else {
+          return [...prev, {
+            photoId: progressData.photoId,
+            photoLabel: 'Photo',
+            progress: progressData.progress,
+            status: progressData.status,
+            error: null
+          }];
+        }
+      });
+    });
+  }, []);
+
+  // Submit photos with real upload functionality
   const handleSubmit = async () => {
     if (!quoteData) return;
 
@@ -129,16 +158,82 @@ export default function UploadPage() {
     }
 
     setIsSubmitting(true);
+    setShowUploadProgress(true);
+    setUploadProgress([]);
 
     try {
-      // Simulate upload process
-      toast({
-        title: "Submitting photos...",
-        description: "Processing your photos and updating your quote.",
+      // Start upload session
+      await startUploadSession(quoteData.quoteId, locationId);
+
+      // Prepare all photos for upload
+      const allPhotos = [];
+      
+      // Add general photos
+      quoteData.photos.general.forEach(photo => {
+        allPhotos.push({
+          photo,
+          category: 'general',
+          deviceInfo: null
+        });
       });
 
-      // Wait for a moment to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Add device photos
+      Object.entries(quoteData.photos.devices).forEach(([sku, slots]) => {
+        slots.forEach((slot, slotIndex) => {
+          slot.images.forEach(photo => {
+            allPhotos.push({
+              photo,
+              category: 'device',
+              deviceInfo: {
+                sku,
+                slotIndex
+              }
+            });
+          });
+        });
+      });
+
+      // Initialize progress tracking
+      const initialProgress = allPhotos.map(({ photo }) => ({
+        photoId: photo.id,
+        photoLabel: photo.label || 'Photo',
+        progress: 0,
+        status: 'pending',
+        error: null
+      }));
+      setUploadProgress(initialProgress);
+
+      // Upload photos in batches
+      const uploadResults = [];
+      for (const { photo, category, deviceInfo } of allPhotos) {
+        try {
+          const result = await uploadPhotosBatch([photo], category, deviceInfo);
+          uploadResults.push(...result);
+        } catch (error) {
+          console.error('Failed to upload photo:', photo.id, error);
+          // Update progress to show failure
+          setUploadProgress(prev => prev.map(p => 
+            p.photoId === photo.id 
+              ? { ...p, status: 'failed', error: error.message }
+              : p
+          ));
+        }
+      }
+
+      // Complete upload session
+      await completeUploadSession();
+
+      // Check if all uploads were successful
+      const failedUploads = uploadResults.filter(result => !result.success);
+      if (failedUploads.length > 0) {
+        toast({
+          title: "Some uploads failed",
+          description: `${failedUploads.length} photos failed to upload. You can retry them individually.`,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
 
       // Mark as submitted and save
       const updatedData = { ...quoteData, submitted: true };
@@ -166,6 +261,35 @@ export default function UploadPage() {
       });
       setIsSubmitting(false);
     }
+  };
+
+  // Retry failed upload
+  const handleRetryUpload = async (photoId) => {
+    try {
+      await retryUpload(photoId);
+      toast({
+        title: "Retrying upload",
+        description: "Photo upload retry initiated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Retry failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Cancel all uploads
+  const handleCancelUploads = () => {
+    cancelAllUploads();
+    setShowUploadProgress(false);
+    setUploadProgress([]);
+    setIsSubmitting(false);
+    toast({
+      title: "Uploads cancelled",
+      description: "All uploads have been cancelled.",
+    });
   };
 
   // Show loading state
@@ -201,113 +325,209 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', paddingBottom: '200px' }}>
       {/* Quote Header */}
       <QuoteHeader quoteId={quoteData.quoteId} locationId={locationId} showPhotoButton={false} />
 
-      <div className="container mx-auto px-6 py-10 max-w-6xl space-y-8">
-        {/* Helpful tip */}
-        <Alert className="bg-secondary/10 border-secondary/20 rounded-xl p-6">
-          <Info className="h-5 w-5 text-secondary" />
-          <AlertDescription className="text-base font-medium text-foreground ml-3">
-            <strong className="text-secondary">Tip:</strong> You can take photos directly from your phone's camera. 
-            Photos help us optimise your quote and installation time.
-          </AlertDescription>
-        </Alert>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+            {/* Helpful tip */}
+            <div style={{
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #7dd3fc',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px'
+            }}>
+              <Info style={{ width: '20px', height: '20px', color: '#0369a1', marginTop: '2px', flexShrink: 0 }} />
+              <div style={{ color: '#111827', fontSize: '14px', fontWeight: '500' }}>
+                <strong style={{ color: '#0369a1' }}>Tip:</strong> You can take photos directly from your phone's camera.
+                Photos help us optimise your quote and installation time.
+              </div>
+            </div>
+
+            {/* Upload Progress */}
+            {showUploadProgress && (
+              <UploadProgress
+                uploads={uploadProgress}
+                onRetry={handleRetryUpload}
+                onCancel={handleCancelUploads}
+              />
+            )}
 
         {/* Location ID warning if missing */}
         {!locationId && (
-          <Alert className="bg-muted/50 border-border/40 rounded-xl p-6">
-            <Info className="h-5 w-5 text-muted-foreground" />
-            <AlertDescription className="text-base font-medium text-foreground ml-3">
+          <div style={{
+            backgroundColor: '#f9fafb',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px'
+          }}>
+            <Info style={{ width: '20px', height: '20px', color: '#6b7280', marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ color: '#111827', fontSize: '14px', fontWeight: '500' }}>
               No locationId found in your link. Proceeding with a default test location for this session.
-            </AlertDescription>
-          </Alert>
+            </div>
+          </div>
         )}
 
         {/* Photo Upload Tabs */}
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/30 p-1 rounded-xl h-14">
-            <TabsTrigger 
-              value="general" 
-              className="text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-primary"
+        <div style={{ width: '100%' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '12px',
+            padding: '4px',
+            marginBottom: '24px'
+          }}>
+            <button
+              onClick={() => setActiveTab('general')}
+              style={{
+                backgroundColor: activeTab === 'general' ? '#ffffff' : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: activeTab === 'general' ? '#c95375' : '#6b7280',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'general' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
+              }}
             >
               General Site Photos
-            </TabsTrigger>
-            <TabsTrigger 
-              value="devices" 
-              className="text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-primary"
+            </button>
+            <button
+              onClick={() => setActiveTab('devices')}
+              style={{
+                backgroundColor: activeTab === 'devices' ? '#ffffff' : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: activeTab === 'devices' ? '#c95375' : '#6b7280',
+                cursor: 'pointer',
+                boxShadow: activeTab === 'devices' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none'
+              }}
             >
               Device Locations
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
 
           {/* General Photos Tab */}
-          <TabsContent value="general" className="space-y-8 mt-8">
-            <Card className="border-border/40 shadow-card rounded-2xl overflow-hidden">
-              <CardHeader className="p-8 pb-6">
-                <CardTitle className="text-2xl font-bold text-foreground">General Site Photos</CardTitle>
-                <CardDescription className="text-base text-muted-foreground font-medium">
-                  Upload photos of your property and key areas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-8 pb-8 space-y-8">
-                {/* Photo Upload Component */}
-                <PhotoDropzone
-                  photos={quoteData.photos.general}
-                  onChange={(photos) => {
-                    setQuoteData({
-                      ...quoteData,
-                      photos: { ...quoteData.photos, general: photos },
-                    });
-                  }}
-                />
+          {activeTab === 'general' && (
+            <div style={{ marginTop: '24px' }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}>
+                <div style={{ padding: '32px 32px 24px 32px' }}>
+                  <h2 style={{ 
+                    fontSize: '20px', 
+                    fontWeight: '700', 
+                    color: '#111827', 
+                    margin: '0 0 8px 0' 
+                  }}>
+                    General Site Photos
+                  </h2>
+                  <p style={{ 
+                    fontSize: '14px', 
+                    color: '#6b7280', 
+                    margin: '0',
+                    fontWeight: '500'
+                  }}>
+                    Upload photos of your property and key areas
+                  </p>
+                </div>
+                <div style={{ padding: '0 32px 32px 32px' }}>
+                      {/* Photo Upload Component */}
+                      <PhotoDropzone
+                        photos={quoteData.photos.general}
+                        onChange={(photos) => {
+                          setQuoteData({
+                            ...quoteData,
+                            photos: { ...quoteData.photos, general: photos },
+                          });
+                        }}
+                        uploadStatuses={uploadProgress.reduce((acc, upload) => {
+                          acc[upload.photoId] = upload;
+                          return acc;
+                        }, {})}
+                      />
 
-                {/* Photo Checklist */}
-                <div className="border-t border-border/40 pt-8">
-                  <h4 className="text-lg font-semibold text-foreground mb-6">Suggested Photos</h4>
-                  <div className="space-y-4">
-                    {GENERAL_PHOTO_CHECKLIST.map((item) => {
-                      // Check if we have a photo that matches this item
-                      const hasPhoto = quoteData.photos.general.some((photo) =>
-                        photo.label?.toLowerCase().includes(item.toLowerCase().split("/")[0])
-                      );
-                      
-                      return (
-                        <div key={item} className="flex items-center gap-3">
-                          <CheckCircle2
-                            className={`h-5 w-5 ${
-                              hasPhoto ? "text-secondary" : "text-muted-foreground"
-                            }`}
-                          />
-                          <span className={`text-base font-medium ${
-                            hasPhoto ? "line-through text-muted-foreground" : "text-foreground"
-                          }`}>
-                            {item}
-                          </span>
-                        </div>
-                      );
-                    })}
+                  {/* Photo Checklist */}
+                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '24px' }}>
+                    <h4 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      color: '#111827', 
+                      margin: '0 0 16px 0' 
+                    }}>
+                      Suggested Photos
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {GENERAL_PHOTO_CHECKLIST.map((item) => {
+                        // Check if we have a photo that matches this item
+                        const hasPhoto = quoteData.photos.general.some((photo) =>
+                          photo.label?.toLowerCase().includes(item.toLowerCase().split("/")[0])
+                        );
+                        
+                        return (
+                          <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <CheckCircle2
+                              style={{ 
+                                width: '20px', 
+                                height: '20px', 
+                                color: hasPhoto ? '#10b981' : '#9ca3af' 
+                              }}
+                            />
+                            <span style={{ 
+                              fontSize: '14px', 
+                              fontWeight: '500',
+                              color: hasPhoto ? '#9ca3af' : '#111827',
+                              textDecoration: hasPhoto ? 'line-through' : 'none'
+                            }}>
+                              {item}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </div>
+          )}
 
           {/* Device Photos Tab */}
-          <TabsContent value="devices" className="space-y-8 mt-8">
-            <DeviceSlots
-              items={quoteData.items}
-              devicePhotos={quoteData.photos.devices}
-              onChange={(devices) => {
-                setQuoteData({
-                  ...quoteData,
-                  photos: { ...quoteData.photos, devices },
-                });
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+          {activeTab === 'devices' && (
+            <div style={{ marginTop: '24px' }}>
+              <DeviceSlots
+                items={quoteData.items}
+                devicePhotos={quoteData.photos.devices}
+                onChange={(devices) => {
+                  setQuoteData({
+                    ...quoteData,
+                    photos: { ...quoteData.photos, devices },
+                  });
+                }}
+                uploadStatuses={uploadProgress.reduce((acc, upload) => {
+                  acc[upload.photoId] = upload;
+                  return acc;
+                }, {})}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sticky Actions Bar */}

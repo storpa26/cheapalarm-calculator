@@ -51,50 +51,111 @@ export function QuoteHeader({ quoteId, locationId, showPhotoButton = true }) {
   };
 
   return (
-    <header className="bg-background border-b border-border/20">
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+    <header style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
           {/* Quote Information */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
             <div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+              <h1 style={{ 
+                fontSize: '24px', 
+                fontWeight: '700', 
+                color: '#111827', 
+                margin: '0',
+                lineHeight: '1.2'
+              }}>
                 Quote #{quoteId || 'N/A'}
               </h1>
-              <p className="text-base text-muted-foreground mt-2 font-medium">
+              <p style={{ 
+                fontSize: '14px', 
+                color: '#6b7280', 
+                margin: '4px 0 0 0',
+                fontWeight: '400'
+              }}>
                 Security System Installation
               </p>
             </div>
             
             {/* Status Badge */}
-            <Badge className="bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium rounded-full border-0 shadow-sm">
-              <FileText className="w-4 h-4 mr-2" />
+            <div style={{
+              backgroundColor: '#288896',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '9999px',
+              fontSize: '12px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <FileText style={{ width: '12px', height: '12px' }} />
               Estimate Created
-            </Badge>
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             {/* View Quote Button */}
-            <Button 
-              variant="outline" 
-              size="sm"
+            <button 
               onClick={handleQuoteClick}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.borderColor = '#9ca3af';
+                e.target.style.color = '#111827';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.color = '#374151';
+              }}
             >
-              <FileText className="w-4 h-4" />
+              <FileText style={{ width: '16px', height: '16px' }} />
               View Quote
-            </Button>
+            </button>
 
             {/* Provide Photos Button - only show if enabled */}
             {showPhotoButton && (
-              <Button 
-                size="sm"
+              <button 
                 onClick={handleUploadClick}
-                className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200"
+                style={{
+                  backgroundColor: '#c95375',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#b8456a';
+                  e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = '#c95375';
+                  e.target.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+                }}
               >
-                <Camera className="w-4 h-4" />
+                <Camera style={{ width: '16px', height: '16px' }} />
                 Provide Site Photos
-              </Button>
+              </button>
             )}
           </div>
         </div>

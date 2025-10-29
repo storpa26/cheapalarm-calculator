@@ -74,57 +74,95 @@ export default function QuotePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff', paddingBottom: '32px' }}>
       {/* Quote Header with navigation */}
       <QuoteHeader quoteId={quoteData.quoteId} locationId={locationId} />
 
-      <div className="container mx-auto px-6 py-10 max-w-6xl space-y-8">
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
         {/* Customer Information Card */}
-        <Card className="border-border/40 shadow-card rounded-2xl overflow-hidden">
-          <CardHeader className="p-8 pb-6">
-            <CardTitle className="text-2xl font-bold text-foreground">Customer Information</CardTitle>
-            <CardDescription className="text-base text-muted-foreground font-medium">
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          marginBottom: '24px'
+        }}>
+          <div style={{ padding: '32px 32px 24px 32px' }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#111827', 
+              margin: '0 0 8px 0' 
+            }}>
+              Customer Information
+            </h2>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#6b7280', 
+              margin: '0',
+              fontWeight: '500'
+            }}>
               Contact details and property information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-8 pb-8 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Name</p>
-                <p className="text-lg font-semibold text-foreground">{quoteData.customer.name}</p>
+            </p>
+          </div>
+          <div style={{ padding: '0 32px 32px 32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', margin: '0' }}>Name</p>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0' }}>{quoteData.customer.name}</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p className="text-lg font-semibold text-foreground">{quoteData.customer.email}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', margin: '0' }}>Email</p>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0' }}>{quoteData.customer.email}</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                <p className="text-lg font-semibold text-foreground">{quoteData.customer.phone}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', margin: '0' }}>Phone</p>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0' }}>{quoteData.customer.phone}</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Solution Type</p>
-                <p className="text-lg font-semibold text-foreground">{quoteData.solution}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', margin: '0' }}>Solution Type</p>
+                <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0' }}>{quoteData.solution}</p>
               </div>
             </div>
-            <div className="pt-4 border-t border-border/40">
-              <p className="text-sm font-medium text-muted-foreground">Site Address</p>
-              <p className="text-lg font-semibold text-foreground">{quoteData.customer.address}</p>
+            <div style={{ paddingTop: '16px', borderTop: '1px solid #e5e7eb', marginTop: '16px' }}>
+              <p style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', margin: '0 0 4px 0' }}>Site Address</p>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0' }}>{quoteData.customer.address}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Quote Items Card */}
-        <Card className="border-border/40 shadow-card rounded-2xl overflow-hidden">
-          <CardHeader className="p-8 pb-6">
-            <CardTitle className="text-2xl font-bold text-foreground">Quote Items</CardTitle>
-            <CardDescription className="text-base text-muted-foreground font-medium">
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          marginBottom: '24px'
+        }}>
+          <div style={{ padding: '32px 32px 24px 32px' }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#111827', 
+              margin: '0 0 8px 0' 
+            }}>
+              Quote Items
+            </h2>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#6b7280', 
+              margin: '0',
+              fontWeight: '500'
+            }}>
               Your selected security equipment and specifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-8 pb-8">
+            </p>
+          </div>
+          <div style={{ padding: '0 32px 32px 32px' }}>
             <ItemsTable items={quoteData.items} />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Photo Request Call-to-Action */}
         <Alert className="bg-secondary/10 border-secondary/20 rounded-xl p-6">

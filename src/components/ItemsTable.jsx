@@ -13,35 +13,103 @@ export function ItemsTable({ items }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-b border-border/40">
-            <TableHead className="w-[100px] text-base font-semibold text-foreground py-4 px-6">SKU</TableHead>
-            <TableHead className="text-base font-semibold text-foreground py-4 px-6">Item Name</TableHead>
-            <TableHead className="w-[100px] text-center text-base font-semibold text-foreground py-4 px-6">Qty</TableHead>
-            <TableHead className="text-base font-semibold text-foreground py-4 px-6">Description</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <th style={{ 
+              width: '100px', 
+              textAlign: 'left', 
+              padding: '16px 24px', 
+              fontSize: '14px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              SKU
+            </th>
+            <th style={{ 
+              textAlign: 'left', 
+              padding: '16px 24px', 
+              fontSize: '14px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              Item Name
+            </th>
+            <th style={{ 
+              width: '100px', 
+              textAlign: 'center', 
+              padding: '16px 24px', 
+              fontSize: '14px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              Qty
+            </th>
+            <th style={{ 
+              textAlign: 'left', 
+              padding: '16px 24px', 
+              fontSize: '14px', 
+              fontWeight: '600', 
+              color: '#111827' 
+            }}>
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {items.map((item, index) => (
-            <TableRow key={item.id || item.sku || index} className="border-b border-border/20 last:border-b-0 hover:bg-muted/20 transition-colors">
-              <TableCell className="font-semibold text-sm text-foreground py-6 px-6">
+            <tr 
+              key={item.id || item.sku || index} 
+              style={{ 
+                borderBottom: '1px solid #f3f4f6',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.backgroundColor = '#f9fafb';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              <td style={{ 
+                padding: '20px 24px', 
+                fontSize: '12px', 
+                fontWeight: '600', 
+                color: '#111827' 
+              }}>
                 {item.sku}
-              </TableCell>
-              <TableCell className="font-semibold text-base text-foreground py-6 px-6">
+              </td>
+              <td style={{ 
+                padding: '20px 24px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#111827' 
+              }}>
                 {item.name}
-              </TableCell>
-              <TableCell className="text-center font-semibold text-base text-foreground py-6 px-6">
+              </td>
+              <td style={{ 
+                textAlign: 'center', 
+                padding: '20px 24px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#111827' 
+              }}>
                 {item.qty}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm font-medium leading-relaxed py-6 px-6">
+              </td>
+              <td style={{ 
+                padding: '20px 24px', 
+                fontSize: '12px', 
+                fontWeight: '500', 
+                color: '#6b7280',
+                lineHeight: '1.5'
+              }}>
                 {item.desc}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
