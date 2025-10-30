@@ -345,9 +345,37 @@ async function createDocument(contactId, payload, docType) {
   };
 
   try {
-    // Use the correct endpoint for estimates vs invoices
-    const endpoint = `https://services.leadconnectorhq.com/invoices/${docType === 'estimate' ? 'estimate' : ''}`;
+    // Primary path: create via WordPress bridge so server injects Terms link
+    const bridgeResp = await fetch('/wp-json/ca/v1/estimate/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(documentData),
+    });
 
+    const bridgeText = await bridgeResp.text();
+    let bridgeJson = null; try { bridgeJson = JSON.parse(bridgeText); } catch {}
+    if (bridgeResp.ok && bridgeJson?.ok) {
+      const result = bridgeJson.result || {};
+      const documentId = result?.estimate?.id || result?._id || result?.id;
+      const documentUrl = result?.estimate?.liveUrl || result?.liveUrl || result?.url || null;
+
+      // Best-effort: ensure link via annotate as well
+      if (documentId && GHL_LOCATION_ID) {
+        try {
+          await fetch('/wp-json/ca/v1/estimate/annotate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estimateId: documentId, locationId: GHL_LOCATION_ID })
+          });
+        } catch {}
+      }
+
+      if (!documentId) return { success: false, error: 'Bridge create succeeded but no estimate ID' };
+      return { success: true, id: documentId, url: documentUrl };
+    }
+
+    // Fallback: create directly in GHL (legacy path)
+    const endpoint = `https://services.leadconnectorhq.com/invoices/${docType === 'estimate' ? 'estimate' : ''}`;
     const resp = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -357,36 +385,29 @@ async function createDocument(contactId, payload, docType) {
       },
       body: JSON.stringify(documentData),
     });
-
     const text = await resp.text();
-    let json = null;
-    try { json = JSON.parse(text); } catch { json = null; }
-
+    let json = null; try { json = JSON.parse(text); } catch {}
     if (!resp.ok) {
       const details = json?.error || json?.message || text || 'Unknown error';
       return { success: false, error: `${resp.status} - ${details}` };
     }
-
-    // Extract document ID and URL from response - GHL uses _id field
     const documentId = json?._id || json?.estimate?.id || json?.id;
     const documentUrl = json?.liveUrl || json?.estimate?.liveUrl || json?.url;
+    if (!documentId) return { success: false, error: 'No document ID returned from GHL' };
 
-    if (!documentId) {
-      console.log('❌ No document ID found in response. Available keys:', Object.keys(json || {}));
-      return { success: false, error: 'No document ID returned from GHL' };
-    }
+    // Ensure link via annotate when created directly
+    try {
+      await fetch('/wp-json/ca/v1/estimate/annotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estimateId: documentId, locationId: GHL_LOCATION_ID })
+      });
+    } catch {}
 
-    return { 
-      success: true, 
-      id: documentId,
-      url: documentUrl 
-    };
+    return { success: true, id: documentId, url: documentUrl };
 
   } catch (err) {
-    return { 
-      success: false, 
-      error: err instanceof Error ? err.message : 'Network error' 
-    };
+    return { success: false, error: err instanceof Error ? err.message : 'Network error' };
   }
 }
 
