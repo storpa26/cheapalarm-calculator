@@ -2,6 +2,7 @@
 // Provides comprehensive upload functionality with retry, compression, and session management
 
 // Upload session management
+import { API_BASE, TEST_LOCATION_ID } from './quoteStorage';
 let currentSession = null;
 let uploadQueue = [];
 let isUploading = false;
@@ -38,14 +39,14 @@ export async function startUploadSession(estimateId, locationId) {
   try {
     console.log('Starting upload session for estimate:', estimateId);
     
-    const response = await fetch('/wp-json/ca/v1/upload/session', {
+    const response = await fetch(`${API_BASE}/wp-json/ca/v1/upload/start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         estimateId,
-        locationId,
+        locationId: locationId || TEST_LOCATION_ID,
         timestamp: new Date().toISOString()
       })
     });
@@ -55,10 +56,14 @@ export async function startUploadSession(estimateId, locationId) {
     }
 
     const sessionData = await response.json();
+    if (!sessionData.ok || !sessionData.token) {
+      throw new Error('Upload start failed');
+    }
     currentSession = {
-      id: sessionData.sessionId,
+      token: sessionData.token,
       estimateId,
       locationId,
+      exp: sessionData.exp,
       startTime: new Date(),
       status: 'active'
     };
@@ -97,7 +102,7 @@ export async function uploadPhoto(photo, category, deviceInfo = null) {
     // Create form data
     const formData = new FormData();
     formData.append('file', compressedFile);
-    formData.append('sessionId', currentSession.id);
+    formData.append('token', currentSession.token);
     formData.append('category', category);
     formData.append('photoId', photo.id);
     formData.append('label', photo.label || '');
@@ -198,7 +203,8 @@ function uploadWithProgress(formData, photoId) {
         }
       } else {
         updateProgress(photoId, 0, UPLOAD_STATUS.FAILED);
-        reject(new Error(`Upload failed with status: ${xhr.status}`));
+        const body = xhr.responseText || '';
+        reject(new Error(`Upload failed: ${xhr.status} ${body}`));
       }
     });
     
@@ -215,7 +221,7 @@ function uploadWithProgress(formData, photoId) {
     });
     
     // Configure request
-    xhr.open('POST', '/wp-json/ca/v1/upload/file');
+    xhr.open('POST', `${API_BASE}/wp-json/ca/v1/upload`);
     xhr.timeout = 30000; // 30 second timeout
     
     // Send request
@@ -229,42 +235,14 @@ function uploadWithProgress(formData, photoId) {
  */
 export async function completeUploadSession() {
   if (!currentSession) {
-    throw new Error('No active upload session');
+    // nothing to do
+    return { ok: true };
   }
-
-  try {
-    console.log('Completing upload session:', currentSession.id);
-    
-    const response = await fetch('/wp-json/ca/v1/upload/complete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sessionId: currentSession.id,
-        estimateId: currentSession.estimateId,
-        locationId: currentSession.locationId
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to complete upload session: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    // Clear session
-    currentSession = null;
-    uploadQueue = [];
-    isUploading = false;
-    
-    console.log('Upload session completed successfully');
-    return result;
-
-  } catch (error) {
-    console.error('Error completing upload session:', error);
-    throw error;
-  }
+  // Clear client-side session; server does not require explicit completion
+  currentSession = null;
+  uploadQueue = [];
+  isUploading = false;
+  return { ok: true };
 }
 
 /**
@@ -424,6 +402,34 @@ export function getCurrentSession() {
  */
 export function isCurrentlyUploading() {
   return isUploading;
+}
+
+// Map uploaded photos to estimate items in WP
+export async function mapPhotosToEstimate(estimateId, locationId, token, uploads) {
+  const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/photos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estimateId, locationId: locationId || TEST_LOCATION_ID, token, uploads })
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to map photos: ${response.status} ${text}`);
+  }
+  return response.json();
+}
+
+// Ask WP to apply mapped photos into GHL estimate descriptions
+export async function applyPhotosToEstimate(estimateId, locationId, token) {
+  const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/apply-photos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estimateId, locationId: locationId || TEST_LOCATION_ID, token })
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to apply photos: ${response.status} ${text}`);
+  }
+  return response.json();
 }
 
 /**

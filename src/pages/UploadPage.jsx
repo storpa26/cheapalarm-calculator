@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
 import { Skeleton } from '../shared/ui/skeleton';
 import { fetchEstimate, saveQuoteData, validateSubmission } from '../lib/quoteStorage';
-import { startUploadSession, uploadPhotosBatch, completeUploadSession, setProgressCallback, retryUpload, cancelAllUploads } from '../lib/uploadApi';
+import { startUploadSession, uploadPhotosBatch, completeUploadSession, setProgressCallback, retryUpload, cancelAllUploads, getCurrentSession, mapPhotosToEstimate, applyPhotosToEstimate } from '../lib/uploadApi';
+import { TEST_LOCATION_ID } from '../lib/quoteStorage';
 import { UploadProgress } from '../components/UploadProgress';
 import { useToast } from '../hooks/use-toast';
 import { Info, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -208,7 +209,8 @@ export default function UploadPage() {
       for (const { photo, category, deviceInfo } of allPhotos) {
         try {
           const result = await uploadPhotosBatch([photo], category, deviceInfo);
-          uploadResults.push(...result);
+          // Persist category/deviceInfo for mapping later
+          result.forEach(r => uploadResults.push({ ...r, category, deviceInfo }));
         } catch (error) {
           console.error('Failed to upload photo:', photo.id, error);
           // Update progress to show failure
@@ -220,7 +222,27 @@ export default function UploadPage() {
         }
       }
 
-      // Complete upload session
+      // Build photo mappings (device photos grouped by SKU => urls)
+      const skuToName = Object.fromEntries((quoteData.items || []).map(i => [i.sku, i.name]));
+      const mapByName = {};
+      uploadResults.filter(r => r.success && r.deviceInfo && r.result && (r.result.url || (r.result.result && r.result.result.url))).forEach(r => {
+        const sku = r.deviceInfo.sku;
+        const name = skuToName[sku] || sku;
+        const url = r.result.url || r.result?.result?.url;
+        if (!mapByName[name]) mapByName[name] = [];
+        mapByName[name].push(url);
+      });
+
+      const uploads = Object.entries(mapByName).map(([itemName, urls]) => ({ itemName, urls }));
+
+      // Send mappings and apply to estimate
+      const session = getCurrentSession();
+      if (uploads.length > 0 && session?.token) {
+        await mapPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session.token, uploads);
+        await applyPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session.token);
+      }
+
+      // Complete upload session (client-side cleanup)
       await completeUploadSession();
 
       // Check if all uploads were successful

@@ -2,9 +2,9 @@
 // Handles fetching quotes from WordPress API and managing local storage
 
 // API configuration
-const API_BASE = "https://cheapalarms.com.au";
+export const API_BASE = "https://cheapalarms.com.au";
 const TEST_ESTIMATE_ID = "68fddd36a5d4856a0fd07d40";
-const TEST_LOCATION_ID = "aLTXtdwNknfmEFo3WBIX";
+export const TEST_LOCATION_ID = "aLTXtdwNknfmEFo3WBIX";
 
 // Quote item structure
 export const createQuoteItem = (item, index) => ({

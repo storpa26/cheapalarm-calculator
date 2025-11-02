@@ -104,7 +104,16 @@ export function ItemsTable({ items }) {
                 color: '#6b7280',
                 lineHeight: '1.5'
               }}>
-                {item.desc}
+                {(() => {
+                  const html = String(item.desc || '');
+                  const hasImg = /<img\s/i.test(html);
+                  if (hasImg) {
+                    // Show only the provided images block
+                    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                  }
+                  // No images -> show a clear message
+                  return <div style={{ fontWeight: 600, color: '#6b7280' }}>No photos provided</div>;
+                })()}
               </td>
             </tr>
           ))}
