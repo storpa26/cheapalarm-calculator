@@ -13,6 +13,8 @@ export const createQuoteItem = (item, index) => ({
   name: item.name || "Unnamed Item",
   qty: item.qty || item.quantity || 1,
   desc: item.description || "",
+  amount: item.amount || 0, // Price per unit
+  currency: item.currency || 'USD',
 });
 
 // Photo item structure

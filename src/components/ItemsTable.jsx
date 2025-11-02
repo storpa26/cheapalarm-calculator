@@ -1,8 +1,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../shared/ui/table';
 
 // Items table component that displays quote items in a clean table format
-// Shows SKU, name, quantity, and description for each item in the quote
-export function ItemsTable({ items }) {
+// Shows SKU, name, quantity, description, and price (admin-editable) for each item
+export function ItemsTable({ items, isAdmin = false, onItemsChange }) {
   // If no items provided, show empty state
   if (!items || items.length === 0) {
     return (
@@ -55,6 +55,18 @@ export function ItemsTable({ items }) {
             }}>
               Description
             </th>
+            {isAdmin && (
+              <th style={{ 
+                width: '120px', 
+                textAlign: 'right', 
+                padding: '16px 24px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#111827' 
+              }}>
+                Price (Unit)
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -115,6 +127,38 @@ export function ItemsTable({ items }) {
                   return <div style={{ fontWeight: 600, color: '#6b7280' }}>No photos provided</div>;
                 })()}
               </td>
+              {isAdmin && (
+                <td style={{ 
+                  textAlign: 'right', 
+                  padding: '20px 24px', 
+                  fontSize: '14px', 
+                  fontWeight: '600', 
+                  color: '#111827'
+                }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={item.amount || 0}
+                    onChange={(e) => {
+                      const newAmount = parseFloat(e.target.value) || 0;
+                      const updated = items.map((it, idx) => 
+                        idx === index ? { ...it, amount: newAmount } : it
+                      );
+                      onItemsChange?.(updated);
+                    }}
+                    style={{
+                      width: '100px',
+                      padding: '6px 10px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      textAlign: 'right'
+                    }}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

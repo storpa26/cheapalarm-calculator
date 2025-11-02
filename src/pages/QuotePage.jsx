@@ -7,7 +7,9 @@ import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../shared/ui/collapsible';
 import { Skeleton } from '../shared/ui/skeleton';
 import { fetchEstimate } from '../lib/quoteStorage';
-import { ChevronDown, Info, AlertTriangle } from 'lucide-react';
+import { updateEstimatePrices } from '../lib/estimateApi';
+import { ChevronDown, Info, AlertTriangle, Save } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 
 // Quote page component that displays quote details and customer information
 // Fetches quote data from WordPress API and displays it in a clean format
@@ -15,9 +17,12 @@ export default function QuotePage() {
   const [searchParams] = useSearchParams();
   const estimateId = searchParams.get("estimateId");
   const locationId = searchParams.get("locationId");
+  const isAdmin = searchParams.get("admin") === "1"; // Admin mode via URL param
   const [quoteData, setQuoteData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
   // Load quote data when component mounts or URL parameters change
   useEffect(() => {
@@ -79,6 +84,16 @@ export default function QuotePage() {
       <QuoteHeader quoteId={quoteData.quoteId} locationId={locationId} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+        {/* Admin Mode Banner */}
+        {isAdmin && (
+          <Alert className="bg-blue-50 border-blue-200 rounded-xl p-4 mb-6">
+            <Info className="h-5 w-5 text-blue-600" />
+            <AlertDescription className="text-base font-medium text-blue-900 ml-3">
+              <strong>Admin Mode:</strong> You can edit item prices. After updating prices, click "Update All Prices" to save changes to the estimate.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Customer Information Card */}
         <div style={{
           backgroundColor: '#ffffff',
@@ -160,8 +175,57 @@ export default function QuotePage() {
             </p>
           </div>
           <div style={{ padding: '0 32px 32px 32px' }}>
-            <ItemsTable items={quoteData.items} />
+            <ItemsTable items={quoteData.items} isAdmin={isAdmin} onItemsChange={(items) => setQuoteData({ ...quoteData, items })} />
           </div>
+          {isAdmin && (
+            <div style={{ 
+              padding: '24px 32px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f9fafb',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px'
+            }}>
+              <button
+                onClick={async () => {
+                  setIsUpdating(true);
+                  try {
+                    await updateEstimatePrices(quoteData.quoteId, locationId, quoteData.items);
+                    toast({
+                      title: "Prices Updated",
+                      description: "All item prices have been updated in the estimate. The estimate link remains the same.",
+                    });
+                  } catch (err) {
+                    toast({
+                      title: "Update Failed",
+                      description: err instanceof Error ? err.message : "Failed to update prices. Please try again.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }}
+                disabled={isUpdating}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 24px',
+                  backgroundColor: isUpdating ? '#9ca3af' : '#c95375',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: isUpdating ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+              >
+                <Save style={{ width: '16px', height: '16px' }} />
+                {isUpdating ? 'Updating...' : 'Update All Prices'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Photo Request Call-to-Action */}
