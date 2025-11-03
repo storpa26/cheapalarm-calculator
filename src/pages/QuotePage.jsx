@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../sh
 import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../shared/ui/collapsible';
 import { Skeleton } from '../shared/ui/skeleton';
-import { fetchEstimate } from '../lib/quoteStorage';
+import { fetchEstimate, checkAdminStatus } from '../lib/quoteStorage';
 import { updateEstimatePrices } from '../lib/estimateApi';
 import { ChevronDown, Info, AlertTriangle, Save } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
@@ -17,12 +17,62 @@ export default function QuotePage() {
   const [searchParams] = useSearchParams();
   const estimateId = searchParams.get("estimateId");
   const locationId = searchParams.get("locationId");
-  const isAdmin = searchParams.get("admin") === "1"; // Admin mode via URL param
+  const adminParam = searchParams.get("admin") === "1"; // Admin mode via URL param
   const [quoteData, setQuoteData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(false);
   const { toast } = useToast();
+
+  // Early validation: require estimateId
+  if (!estimateId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Invalid Link
+            </CardTitle>
+            <CardDescription>
+              This page requires an estimate ID. Please use the link provided in your estimate email.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check admin status if admin param is present
+  useEffect(() => {
+    async function verifyAdmin() {
+      if (adminParam) {
+        setIsCheckingAdmin(true);
+        try {
+          const adminStatus = await checkAdminStatus();
+          setIsAdmin(adminStatus);
+          if (!adminStatus) {
+            toast({
+              title: "Access Denied",
+              description: "You must be logged in as a WordPress administrator to access admin mode.",
+              variant: "destructive",
+            });
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+          setIsAdmin(false);
+        } finally {
+          setIsCheckingAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    }
+
+    verifyAdmin();
+  }, [adminParam, toast]);
 
   // Load quote data when component mounts or URL parameters change
   useEffect(() => {
@@ -46,8 +96,8 @@ export default function QuotePage() {
     loadEstimate();
   }, [estimateId, locationId]);
 
-  // Show loading state while fetching data
-  if (isLoading) {
+  // Show loading state while fetching data or checking admin status
+  if (isLoading || (adminParam && isCheckingAdmin)) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">

@@ -43,6 +43,25 @@ export default function UploadPage() {
 
   console.log('UploadPage rendered with estimateId:', estimateId);
 
+  // Early validation: require estimateId
+  if (!estimateId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Invalid Link
+            </CardTitle>
+            <CardDescription>
+              This page requires an estimate ID. Please use the link provided in your estimate email.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   // Load quote data - run only once to prevent render loops
   useEffect(() => {
     console.log('UploadPage useEffect running - one time only');
@@ -51,35 +70,6 @@ export default function UploadPage() {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Use default data for testing if no estimateId provided
-        if (!estimateId) {
-          console.log('No estimateId provided, using default data');
-          setQuoteData({
-            quoteId: 'TEST-001',
-            customer: {
-              name: 'Test Customer',
-              email: 'test@example.com',
-              phone: '0400 000 000',
-              address: '123 Test Street, Sydney NSW 2000',
-            },
-            solution: 'Test Security System',
-            items: [
-              { sku: 'ITEM-1', name: 'Test Item 1', qty: 1, desc: 'Test description' },
-              { sku: 'ITEM-2', name: 'Test Item 2', qty: 2, desc: 'Test description 2' },
-            ],
-            photos: {
-              general: [],
-              devices: {
-                'ITEM-1': [{ images: [], notes: '' }],
-                'ITEM-2': [{ images: [], notes: '' }, { images: [], notes: '' }],
-              },
-            },
-            submitted: false,
-          });
-          setIsLoading(false);
-          return;
-        }
         
         // Fetch quote data from WordPress API
         const data = await fetchEstimate(estimateId, locationId);

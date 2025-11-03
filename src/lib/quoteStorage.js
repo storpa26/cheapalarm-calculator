@@ -3,7 +3,6 @@
 
 // API configuration
 export const API_BASE = "https://cheapalarms.com.au";
-const TEST_ESTIMATE_ID = "68fddd36a5d4856a0fd07d40";
 export const TEST_LOCATION_ID = "aLTXtdwNknfmEFo3WBIX";
 
 // Quote item structure
@@ -59,7 +58,7 @@ export const createQuoteData = (data) => {
   };
   
   return {
-    quoteId: data.estimateId || TEST_ESTIMATE_ID,
+    quoteId: data.estimateId || null,
     customer: {
       name: data.contact?.name || data.contact?.email?.split("@")[0] || "Customer",
       email: data.contact?.email || "",
@@ -76,12 +75,37 @@ export const createQuoteData = (data) => {
   };
 };
 
+// Check if current user is WordPress admin
+export async function checkAdminStatus() {
+  try {
+    const response = await fetch(`${API_BASE}/wp-json/ca/v1/admin/check`, {
+      method: 'GET',
+      credentials: 'include', // Include cookies for WordPress authentication
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      return false;
+    }
+    
+    const data = await response.json();
+    return data.isAdmin === true;
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return false;
+  }
+}
+
 // Fetch estimate from WordPress API
 export async function fetchEstimate(estimateId, locationId) {
-  const finalEstimateId = estimateId || TEST_ESTIMATE_ID;
+  if (!estimateId) {
+    throw new Error('estimateId is required');
+  }
   const finalLocationId = locationId || TEST_LOCATION_ID;
   
-  const url = `${API_BASE}/wp-json/ca/v1/estimate?estimateId=${finalEstimateId}&locationId=${finalLocationId}`;
+  const url = `${API_BASE}/wp-json/ca/v1/estimate?estimateId=${estimateId}&locationId=${finalLocationId}`;
   
   try {
     const response = await fetch(url);
@@ -95,7 +119,7 @@ export async function fetchEstimate(estimateId, locationId) {
     const quoteData = createQuoteData(data);
     
     // Try to load saved photos from localStorage
-    const savedData = localStorage.getItem(`cheapalarms:quote:${finalEstimateId}`);
+    const savedData = localStorage.getItem(`cheapalarms:quote:${estimateId}`);
     const savedPhotos = savedData ? JSON.parse(savedData).photos : null;
     
     // Use saved photos if available, otherwise use initialized empty photos

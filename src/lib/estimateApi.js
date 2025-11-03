@@ -86,9 +86,10 @@ export async function updateEstimatePrices(estimateId, locationId, items) {
     termsNotes: existingTerms
   };
   
-  // PUT to WP bridge
+  // PUT to WP bridge (include credentials for admin auth)
   const updateResp = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/update`, {
     method: 'PUT',
+    credentials: 'include', // Include cookies for WordPress authentication
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });

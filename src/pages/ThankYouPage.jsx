@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../sh
 import { Button } from '../shared/ui/button';
 import { Alert, AlertDescription } from '../shared/ui/alert';
 import { fetchEstimate } from '../lib/quoteStorage';
-import { CheckCircle, Clock, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Clock, Phone, Mail, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 // Thank you page component that confirms successful photo submission
 // Shows next steps and contact information for the customer
@@ -15,6 +15,25 @@ export default function ThankYouPage() {
   const locationId = searchParams.get("locationId");
   const [quoteData, setQuoteData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Early validation: require estimateId
+  if (!estimateId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Invalid Link
+            </CardTitle>
+            <CardDescription>
+              This page requires an estimate ID. Please use the link provided in your estimate email.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   // Load quote data to display customer information
   useEffect(() => {
@@ -28,17 +47,8 @@ export default function ThankYouPage() {
         
       } catch (err) {
         console.error('Error loading estimate:', err);
-        // Don't show error, just use default data
-        setQuoteData({
-          quoteId: estimateId || 'N/A',
-          customer: {
-            name: 'Customer',
-            email: 'customer@example.com',
-            phone: 'N/A',
-            address: 'N/A',
-          },
-          solution: 'Security System',
-        });
+        // Set quoteData to null to show error state
+        setQuoteData(null);
       } finally {
         setIsLoading(false);
       }
@@ -64,6 +74,25 @@ export default function ThankYouPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show error state if quote couldn't be loaded
+  if (!quoteData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Estimate Not Found
+            </CardTitle>
+            <CardDescription>
+              Could not load estimate data. Please check your link or try again.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
