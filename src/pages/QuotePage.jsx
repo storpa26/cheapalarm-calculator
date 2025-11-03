@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { QuoteHeader } from '../components/QuoteHeader';
 import { ItemsTable } from '../components/ItemsTable';
@@ -25,6 +25,7 @@ export default function QuotePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(false);
   const { toast } = useToast();
+  const lastCheckedAdminParam = useRef(null);
 
   // Early validation: require estimateId
   if (!estimateId) {
@@ -45,13 +46,35 @@ export default function QuotePage() {
     );
   }
 
-  // Check admin status if admin param is present
+  // Check admin status if admin param is present (only check once per adminParam value)
   useEffect(() => {
+    // Skip if we've already checked this adminParam value
+    if (lastCheckedAdminParam.current === adminParam) return;
+    
     async function verifyAdmin() {
+      lastCheckedAdminParam.current = adminParam;
+      
       if (adminParam) {
+        // On localhost, allow admin mode without backend check for development
+        // UNLESS guest=true is in URL (for testing guest view)
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname.includes('localhost');
+        const isGuest = searchParams.get("guest") === "1";
+        
+        if (isLocalhost && !isGuest) {
+          console.log('Localhost detected - enabling admin mode without backend check');
+          setIsAdmin(true);
+          setIsCheckingAdmin(false);
+          return;
+        }
+        
+        // On production, check backend
         setIsCheckingAdmin(true);
         try {
+          console.log('Checking admin status...');
           const adminStatus = await checkAdminStatus();
+          console.log('Admin status result:', adminStatus);
           setIsAdmin(adminStatus);
           if (!adminStatus) {
             toast({
@@ -63,6 +86,11 @@ export default function QuotePage() {
         } catch (err) {
           console.error('Error checking admin status:', err);
           setIsAdmin(false);
+          toast({
+            title: "Admin Check Failed",
+            description: "Could not verify admin status. Please ensure you're logged into WordPress.",
+            variant: "destructive",
+          });
         } finally {
           setIsCheckingAdmin(false);
         }
@@ -72,7 +100,8 @@ export default function QuotePage() {
     }
 
     verifyAdmin();
-  }, [adminParam, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminParam]); // Only depend on adminParam, not toast
 
   // Load quote data when component mounts or URL parameters change
   useEffect(() => {
