@@ -116,14 +116,21 @@ export function DeviceSlots({ items, devicePhotos, onChange, uploadStatuses = {}
                   ({item.qty} {item.qty === 1 ? 'unit' : 'units'})
                 </span>
               </h3>
-              <p style={{ 
-                fontSize: '12px', 
-                color: '#6b7280', 
-                margin: '0',
-                fontWeight: '500'
-              }}>
-                {item.desc}
-              </p>
+              {item.desc && (() => {
+                // Remove all <img> tags from the description
+                const cleanDesc = item.desc.replace(/<img[^>]*>|<\/img>/gi, '');
+                return (
+                  <div 
+                    style={{ 
+                      fontSize: '12px', 
+                      color: '#6b7280', 
+                      margin: '0',
+                      fontWeight: '500'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: cleanDesc }}
+                  />
+                );
+              })()}
             </div>
             
             <div style={{ padding: '24px 32px' }}>
