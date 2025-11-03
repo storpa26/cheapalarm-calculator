@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../sh
 import { Alert, AlertDescription } from '../shared/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../shared/ui/tabs';
 import { Skeleton } from '../shared/ui/skeleton';
-import { fetchEstimate, saveQuoteData, validateSubmission } from '../lib/quoteStorage';
+import { fetchEstimate, validateSubmission } from '../lib/quoteStorage';
 import { startUploadSession, uploadPhotosBatch, completeUploadSession, setProgressCallback, retryUpload, cancelAllUploads, getCurrentSession, mapPhotosToEstimate, applyPhotosToEstimate } from '../lib/uploadApi';
 import { TEST_LOCATION_ID } from '../lib/quoteStorage';
 import { UploadProgress } from '../components/UploadProgress';
@@ -35,7 +35,6 @@ export default function UploadPage() {
   const [quoteData, setQuoteData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [uploadProgress, setUploadProgress] = useState([]);
@@ -93,21 +92,6 @@ export default function UploadPage() {
     loadEstimate();
   }, []); // Empty dependency array - run only once
 
-  // Save progress to localStorage
-  const handleSave = () => {
-    if (!quoteData) return;
-    
-    setIsSaving(true);
-    saveQuoteData(quoteData);
-    
-    toast({
-      title: "Progress saved",
-      description: "Your photos and notes have been saved.",
-    });
-    
-    // Reset saving state after a brief delay
-    setTimeout(() => setIsSaving(false), 500);
-  };
 
   // Set up progress callback
   useEffect(() => {
@@ -247,22 +231,18 @@ export default function UploadPage() {
         return;
       }
 
-      // Mark as submitted and save
-      const updatedData = { ...quoteData, submitted: true };
-      saveQuoteData(updatedData);
-
       // Success message
       toast({
         title: "Photos submitted!",
         description: "Your photos have been submitted successfully. We'll review them and update your quote.",
       });
 
-      // Navigate to thank you page
+      // Navigate to quote page
       const params = new URLSearchParams();
       if (quoteData.quoteId) params.append('estimateId', quoteData.quoteId);
       if (locationId) params.append('locationId', locationId);
       
-      navigate(`/thank-you?${params.toString()}`);
+      navigate(`/quote?${params.toString()}`);
       
     } catch (error) {
       console.error("Submit error:", error);
@@ -544,9 +524,7 @@ export default function UploadPage() {
 
       {/* Sticky Actions Bar */}
       <StickyActionsBar
-        onSave={handleSave}
         onSubmit={handleSubmit}
-        isSaving={isSaving}
         isSubmitting={isSubmitting}
       />
     </div>

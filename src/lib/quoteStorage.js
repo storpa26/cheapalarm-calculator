@@ -157,14 +157,8 @@ export async function fetchEstimate(estimateId, locationId) {
     // Create quote data from API response
     const quoteData = createQuoteData(data);
     
-    // Try to load saved photos from localStorage
-    const savedData = localStorage.getItem(`cheapalarms:quote:${estimateId}`);
-    const savedPhotos = savedData ? JSON.parse(savedData).photos : null;
-    
-    // Use saved photos if available, otherwise use initialized empty photos
-    if (savedPhotos) {
-      quoteData.photos = savedPhotos;
-    }
+    // Don't load saved photos from localStorage - always start fresh
+    // Photos should be uploaded directly to server, not stored locally
     
     return quoteData;
   } catch (error) {
