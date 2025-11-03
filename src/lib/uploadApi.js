@@ -362,7 +362,11 @@ function validateFile(file) {
  */
 function dataUrlToFile(dataUrl, filename) {
   const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)[1];
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  if (!mimeMatch) {
+    throw new Error('Invalid data URL format');
+  }
+  const mime = mimeMatch[1];
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
@@ -371,7 +375,30 @@ function dataUrlToFile(dataUrl, filename) {
     u8arr[n] = bstr.charCodeAt(n);
   }
   
-  return new File([u8arr], filename, { type: mime });
+  // Map MIME types to file extensions
+  const mimeToExt = {
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+  };
+  
+  const ext = mimeToExt[mime.toLowerCase()] || '.jpg';
+  
+  // Ensure filename has correct extension
+  let finalFilename = filename;
+  // Remove any existing extension
+  finalFilename = finalFilename.replace(/\.[^/.]+$/, '');
+  // Add correct extension based on MIME type
+  finalFilename = finalFilename + ext;
+  
+  // Fallback if filename is empty
+  if (!finalFilename || finalFilename === ext) {
+    finalFilename = 'photo' + ext;
+  }
+  
+  return new File([u8arr], finalFilename, { type: mime });
 }
 
 /**
