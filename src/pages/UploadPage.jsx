@@ -196,24 +196,79 @@ export default function UploadPage() {
         }
       }
 
-      // Build photo mappings (device photos grouped by SKU => urls)
-      const skuToName = Object.fromEntries((quoteData.items || []).map(i => [i.sku, i.name]));
-      const mapByName = {};
+      // Build photo mappings (device photos grouped by item ID or name => urls)
+      // Backend matches by itemKey (ID) first, then itemName
+      const skuToItem = Object.fromEntries((quoteData.items || []).map(i => [i.sku, i]));
+      const mapByKey = {};
+      
+      // Process device photos (with deviceInfo)
       uploadResults.filter(r => r.success && r.deviceInfo && r.result && (r.result.url || (r.result.result && r.result.result.url))).forEach(r => {
         const sku = r.deviceInfo.sku;
-        const name = skuToName[sku] || sku;
+        const item = skuToItem[sku];
+        if (!item) return; // Skip if item not found
+        
+        // Use item ID (itemKey) if available, otherwise use name (itemName)
+        const key = item.id || item._id || item.name || sku;
         const url = r.result.url || r.result?.result?.url;
-        if (!mapByName[name]) mapByName[name] = [];
-        mapByName[name].push(url);
+        if (!mapByKey[key]) {
+          mapByKey[key] = {
+            itemKey: item.id || item._id || undefined,
+            itemName: item.name || sku,
+            urls: []
+          };
+        }
+        if (url) mapByKey[key].urls.push(url);
       });
 
-      const uploads = Object.entries(mapByName).map(([itemName, urls]) => ({ itemName, urls }));
+      // Convert to array format expected by backend
+      const uploads = Object.values(mapByKey).map(entry => ({
+        itemKey: entry.itemKey,
+        itemName: entry.itemName,
+        urls: entry.urls
+      }));
 
       // Send mappings and apply to estimate
       const session = getCurrentSession();
-      if (uploads.length > 0 && session?.token) {
-        await mapPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session.token, uploads);
-        await applyPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session.token);
+      console.log('Photo mappings to send:', JSON.stringify(uploads, null, 2));
+      console.log('Original quote items:', quoteData.items.map(i => ({ id: i.id, _id: i._id, name: i.name, sku: i.sku })));
+      console.log('Upload results count:', uploadResults.filter(r => r.success).length);
+      
+      if (uploads.length > 0) {
+        try {
+          console.log('Calling mapPhotosToEstimate...');
+          const mapResult = await mapPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session?.token, uploads);
+          console.log('Map photos result:', mapResult);
+          
+          if (!mapResult.ok) {
+            throw new Error('Failed to map photos: ' + (mapResult.error || 'Unknown error'));
+          }
+          
+          console.log('Calling applyPhotosToEstimate...');
+          // Note: token is optional for apply-photos, backend doesn't require it
+          const applyResult = await applyPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session?.token);
+          console.log('Apply photos result:', applyResult);
+          
+          if (!applyResult.ok) {
+            throw new Error('Failed to apply photos: ' + (applyResult.error || 'Unknown error'));
+          }
+          
+          console.log('✅ Photos successfully mapped and applied to estimate items');
+        } catch (error) {
+          console.error('❌ Error mapping/applying photos:', error);
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            uploadsLength: uploads.length,
+            hasToken: !!session?.token
+          });
+          toast({
+            title: "Warning",
+            description: `Photos uploaded but may not have been applied to items: ${error.message}. Please refresh the quote page or try applying manually.`,
+            variant: "default",
+          });
+        }
+      } else {
+        console.warn('No uploads to map:', { uploadsLength: uploads.length });
       }
 
       // Complete upload session (client-side cleanup)
@@ -236,6 +291,9 @@ export default function UploadPage() {
         title: "Photos submitted!",
         description: "Your photos have been submitted successfully. We'll review them and update your quote.",
       });
+
+      // Wait a moment for backend to finish processing before redirecting
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Navigate to quote page
       const params = new URLSearchParams();

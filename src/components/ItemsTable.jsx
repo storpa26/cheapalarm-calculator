@@ -118,9 +118,18 @@ export function ItemsTable({ items, isAdmin = false, onItemsChange }) {
               }}>
                 {(() => {
                   const html = String(item.desc || '');
+                  // Check for images - look for img tags OR "Provided Image" text OR "No photos provided" (which means backend processed but no photos)
                   const hasImg = /<img\s/i.test(html);
-                  if (hasImg) {
-                    // Show only the provided images block
+                  const hasProvidedImage = /provided image/i.test(html.toLowerCase());
+                  const hasNoPhotosMsg = /no photos provided/i.test(html.toLowerCase());
+                  
+                  // Debug log
+                  if (!hasImg && !hasProvidedImage && html.trim() && !hasNoPhotosMsg) {
+                    console.log('Item description without img tag:', item.name, html.substring(0, 100));
+                  }
+                  
+                  if (hasImg || hasProvidedImage) {
+                    // Show the provided images block (includes "Provided Image" text or img tags)
                     return <div dangerouslySetInnerHTML={{ __html: html }} />;
                   }
                   // No images -> show a clear message

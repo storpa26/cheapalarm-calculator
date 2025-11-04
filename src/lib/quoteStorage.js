@@ -157,6 +157,16 @@ export async function fetchEstimate(estimateId, locationId) {
     // Create quote data from API response
     const quoteData = createQuoteData(data);
     
+    // Debug: log item descriptions to see if photos are present
+    console.log('Item descriptions from API:');
+    quoteData.items.forEach((item, idx) => {
+      console.log(`Item ${idx + 1} (${item.name}):`, {
+        desc: item.desc,
+        hasImg: /<img\s/i.test(item.desc || ''),
+        descLength: item.desc?.length || 0
+      });
+    });
+    
     // Don't load saved photos from localStorage - always start fresh
     // Photos should be uploaded directly to server, not stored locally
     
