@@ -13,7 +13,8 @@ export function StickyActionsBar({ onSubmit, isSubmitting }) {
       backgroundColor: '#ffffff',
       borderTop: '1px solid #e5e7eb',
       boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)',
-      zIndex: 50,
+      zIndex: 9999,
+      isolation: 'isolate', // Create new stacking context
       padding: '24px 0'
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
