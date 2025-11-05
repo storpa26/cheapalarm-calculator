@@ -15,7 +15,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { API_BASE } from '../lib/quoteStorage';
+import { API_BASE, checkAdminStatus } from '../lib/quoteStorage';
 
 // Admin Dashboard Page Component
 // Displays list of all estimates with search and filtering
@@ -24,9 +24,49 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Fetch estimates list
+  // Verify admin status before rendering dashboard
   useEffect(() => {
+    async function verifyAdmin() {
+      try {
+        setIsCheckingAuth(true);
+        
+        // Only check if window.caAdminMode is set
+        if (window.caAdminMode === true) {
+          console.log('🔒 Verifying admin status...');
+          const isAdmin = await checkAdminStatus();
+          setIsAuthorized(isAdmin);
+          
+          if (!isAdmin) {
+            setError('Access Denied - You must be logged in as a WordPress administrator to access this page.');
+            console.error('🚫 Admin access denied - user is not authorized');
+          } else {
+            console.log('✅ Admin access granted');
+          }
+        } else {
+          // Not in admin mode, don't render
+          setIsAuthorized(false);
+          setError('This page is only accessible from WordPress admin.');
+          console.error('🚫 Admin mode not enabled - window.caAdminMode is not set');
+        }
+      } catch (err) {
+        console.error('Error verifying admin status:', err);
+        setIsAuthorized(false);
+        setError('Failed to verify admin status. Please refresh the page.');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    }
+    
+    verifyAdmin();
+  }, []);
+
+  // Fetch estimates list (only after authorization)
+  useEffect(() => {
+    if (!isAuthorized) return; // Don't fetch if not authorized
+    
     async function fetchEstimates() {
       try {
         setIsLoading(true);
@@ -57,7 +97,7 @@ export default function AdminDashboardPage() {
     }
     
     fetchEstimates();
-  }, []);
+  }, [isAuthorized]);
 
   // Filter estimates based on search query
   const filteredEstimates = estimates.filter(estimate => {
@@ -135,6 +175,43 @@ export default function AdminDashboardPage() {
     const quoteUrl = `${window.location.origin}/quote?estimateId=${estimateId}&locationId=${locationId || 'aLTXtdwNknfmEFo3WBIX'}&admin=1`;
     window.open(quoteUrl, '_blank');
   };
+
+  // Show loading state while checking authorization
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen p-6 flex items-center justify-center" style={{ backgroundColor: '#fafafa' }}>
+        <Card style={{ borderColor: '#e0e0e0', maxWidth: '500px' }}>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#288896' }}></div>
+              <p className="text-base font-medium" style={{ color: '#005667' }}>
+                Verifying admin access...
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state if not authorized
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen p-6 flex items-center justify-center" style={{ backgroundColor: '#fafafa' }}>
+        <Card style={{ borderColor: '#c95375', maxWidth: '500px' }}>
+          <CardContent className="pt-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-5 w-5" />
+              <AlertDescription className="mt-2">
+                <p className="font-semibold text-base mb-2">Access Denied</p>
+                <p className="text-sm">{error || 'You must be logged in as a WordPress administrator to access this page.'}</p>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6" style={{ backgroundColor: '#fafafa' }}>
