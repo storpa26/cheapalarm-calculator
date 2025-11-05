@@ -39,6 +39,19 @@ function App() {
   console.log('🚀 App component rendering')
   console.log('📍 Current URL:', window.location.href)
   console.log('📍 Current pathname:', window.location.pathname)
+  console.log('🔍 Admin mode:', window.caAdminMode)
+  console.log('🔍 Initial route:', window.caInitialRoute)
+
+  // If WordPress admin mode is enabled, render dashboard directly
+  // This bypasses React Router routing issues with WordPress admin URLs
+  if (window.caAdminMode === true) {
+    console.log('🔧 Admin mode detected - rendering dashboard directly')
+    return (
+      <div className="cheap-alarms-app">
+        <AdminDashboardPage />
+      </div>
+    )
+  }
 
   return (
     <div className="cheap-alarms-app">

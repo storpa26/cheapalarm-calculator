@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../shared/ui/card';
 import { Skeleton } from '../shared/ui/skeleton';
 import { Button } from '../shared/ui/button';
@@ -25,7 +24,6 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
 
   // Fetch estimates list
   useEffect(() => {
@@ -132,18 +130,10 @@ export default function AdminDashboardPage() {
 
   // Handle estimate click - navigate to quote page
   const handleEstimateClick = (estimateId, locationId) => {
-    // Check if we're in WordPress admin context
-    const isWpAdmin = window.caAdminMode === true;
-    
-    if (isWpAdmin) {
-      // Open in new tab when in WP admin
-      const quoteUrl = `${window.location.origin}/quote?estimateId=${estimateId}&locationId=${locationId || 'aLTXtdwNknfmEFo3WBIX'}&admin=1`;
-      window.open(quoteUrl, '_blank');
-    } else {
-      // Normal navigation in React app
-      const quoteUrl = `/quote?estimateId=${estimateId}&locationId=${locationId || 'aLTXtdwNknfmEFo3WBIX'}&admin=1`;
-      navigate(quoteUrl);
-    }
+    // Always open in new tab to avoid routing issues
+    // This works both in admin mode (no Router) and normal mode
+    const quoteUrl = `${window.location.origin}/quote?estimateId=${estimateId}&locationId=${locationId || 'aLTXtdwNknfmEFo3WBIX'}&admin=1`;
+    window.open(quoteUrl, '_blank');
   };
 
   return (
@@ -190,6 +180,74 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* WordPress Admin Links Test Section - Only show on localhost */}
+        {/* Test section removed - fix is working. Uncomment below if needed for testing */}
+        {/* 
+        {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+          <Card style={{ borderColor: '#c95375', backgroundColor: '#fff5f7' }}>
+            <CardContent className="pt-6">
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#c95375' }}>
+                🧪 WordPress Admin Links Test (Localhost Only)
+              </h2>
+              <p className="text-sm mb-4" style={{ color: '#666' }}>
+                Click these links to test if React Router is intercepting WordPress admin links.
+                Check the browser console and URL bar to see if they're being rewritten from /wp-admin to /admin
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <a 
+                  href="/wp-admin/edit.php?post_type=page" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Pages (/wp-admin/edit.php?post_type=page)
+                </a>
+                <a 
+                  href="/wp-admin/edit.php?post_type=post" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Posts (/wp-admin/edit.php?post_type=post)
+                </a>
+                <a 
+                  href="/wp-admin/admin.php?page=plugins" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Plugins (/wp-admin/admin.php?page=plugins)
+                </a>
+                <a 
+                  href="/wp-admin/post.php?post=123&action=edit" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Edit Post (/wp-admin/post.php?post=123&action=edit)
+                </a>
+                <a 
+                  href="/wp-admin/users.php" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Users (/wp-admin/users.php)
+                </a>
+                <a 
+                  href="/wp-admin/themes.php" 
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  style={{ backgroundColor: '#e6f5f7', color: '#005667', border: '1px solid #288896' }}
+                >
+                  Themes (/wp-admin/themes.php)
+                </a>
+              </div>
+              <div className="mt-4 p-3 rounded-md" style={{ backgroundColor: '#e6f5f7' }}>
+                <p className="text-xs font-mono" style={{ color: '#005667' }}>
+                  <strong>Expected behavior:</strong> These links should navigate to /wp-admin/... URLs<br/>
+                  <strong>Current issue:</strong> They're being rewritten to /admin/... URLs
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        */}
 
         {/* Error State */}
         {error && (
