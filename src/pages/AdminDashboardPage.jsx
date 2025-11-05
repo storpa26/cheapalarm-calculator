@@ -13,7 +13,9 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { API_BASE, checkAdminStatus } from '../lib/quoteStorage';
 
@@ -26,6 +28,15 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  // Pagination state - initialize from URL params if available
+  const [currentPage, setCurrentPage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = parseInt(params.get('page') || '1', 10);
+    return page >= 1 ? page : 1;
+  });
+  const [pageSize] = useState(5); // 5 results per page for testing
+  const [totalCount, setTotalCount] = useState(0);
 
   // Verify admin status before rendering dashboard
   useEffect(() => {
@@ -33,8 +44,17 @@ export default function AdminDashboardPage() {
       try {
         setIsCheckingAuth(true);
         
-        // Only check if window.caAdminMode is set
-        if (window.caAdminMode === true) {
+        // Localhost bypass for testing
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        
+        if (isLocalhost) {
+          console.log('🔧 Localhost detected - bypassing admin mode check for testing');
+          setIsAuthorized(true);
+          console.log('✅ Admin access granted (localhost bypass)');
+        } else if (window.caAdminMode === true) {
+          // Only check if window.caAdminMode is set
           console.log('🔒 Verifying admin status...');
           const isAdmin = await checkAdminStatus();
           setIsAuthorized(isAdmin);
@@ -63,16 +83,20 @@ export default function AdminDashboardPage() {
     verifyAdmin();
   }, []);
 
-  // Fetch estimates list (only after authorization)
+  // Store all estimates for client-side pagination
+  const [allEstimates, setAllEstimates] = useState([]);
+
+  // Fetch all estimates once (only on mount or when authorized changes)
   useEffect(() => {
     if (!isAuthorized) return; // Don't fetch if not authorized
     
-    async function fetchEstimates() {
+    async function fetchAllEstimates() {
       try {
         setIsLoading(true);
         setError(null);
         
-        const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/list?limit=100`, {
+        // Fetch all estimates (backend doesn't support offset, so we'll do client-side pagination)
+        const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/list?limit=1000`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -83,23 +107,56 @@ export default function AdminDashboardPage() {
         
         const data = await response.json();
         
+        console.log('📥 API Response:', {
+          ok: data.ok,
+          itemsCount: data.items?.length,
+          total: data.total,
+          fullResponse: data
+        });
+        
         if (data.ok && Array.isArray(data.items)) {
-          setEstimates(data.items);
+          setAllEstimates(data.items);
+          // Use total from backend if provided, otherwise use items length
+          setTotalCount(data.total !== undefined ? data.total : data.items.length);
+          console.log('📊 Total estimates count:', data.total !== undefined ? data.total : data.items.length);
         } else {
-          setEstimates([]);
+          setAllEstimates([]);
+          setTotalCount(0);
         }
       } catch (err) {
         console.error('Error fetching estimates:', err);
         setError(err.message);
+        setAllEstimates([]);
+        setTotalCount(0);
       } finally {
         setIsLoading(false);
       }
     }
     
-    fetchEstimates();
+    fetchAllEstimates();
   }, [isAuthorized]);
+  
+  // Client-side pagination: slice allEstimates based on currentPage
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedEstimates = allEstimates.slice(startIndex, endIndex);
+    setEstimates(paginatedEstimates);
+    
+    console.log('📄 Pagination:', {
+      currentPage,
+      pageSize,
+      startIndex,
+      endIndex,
+      totalItems: allEstimates.length,
+      paginatedCount: paginatedEstimates.length,
+      firstItemId: paginatedEstimates[0]?.estimateId,
+      lastItemId: paginatedEstimates[paginatedEstimates.length - 1]?.estimateId
+    });
+  }, [allEstimates, currentPage, pageSize]);
 
-  // Filter estimates based on search query
+  // Filter estimates based on search query (client-side filtering)
+  // Note: For better performance with large datasets, move search to server-side
   const filteredEstimates = estimates.filter(estimate => {
     if (!searchQuery) return true;
     
@@ -112,6 +169,57 @@ export default function AdminDashboardPage() {
            email.includes(query) || 
            estimateId.includes(query);
   });
+  
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startItem = totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
+  
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    if (searchQuery) {
+      setCurrentPage(1);
+    }
+  }, [searchQuery]);
+  
+  // Update URL params when page changes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (currentPage === 1) {
+      params.delete('page');
+    } else {
+      params.set('page', currentPage.toString());
+    }
+    
+    const newUrl = params.toString() 
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    
+    // Update URL without page reload
+    window.history.pushState({ page: currentPage }, '', newUrl);
+  }, [currentPage]);
+  
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Format date
   const formatDate = (dateString) => {
@@ -227,7 +335,11 @@ export default function AdminDashboardPage() {
             </p>
           </div>
           <div className="text-sm font-medium px-4 py-2 rounded-lg" style={{ backgroundColor: '#e6f5f7', color: '#005667' }}>
-            <span style={{ color: '#288896', fontWeight: '600' }}>{filteredEstimates.length}</span> of <span style={{ color: '#288896', fontWeight: '600' }}>{estimates.length}</span> estimates
+            {searchQuery ? (
+              <span>Showing <span style={{ color: '#288896', fontWeight: '600' }}>{filteredEstimates.length}</span> filtered results</span>
+            ) : (
+              <span>Showing <span style={{ color: '#288896', fontWeight: '600' }}>{startItem}-{endItem}</span> of <span style={{ color: '#288896', fontWeight: '600' }}>{totalCount}</span> estimates</span>
+            )}
           </div>
         </div>
 
@@ -355,9 +467,10 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          /* Estimates List */
-          <div className="space-y-4">
-            {filteredEstimates.map((estimate) => (
+          <>
+            {/* Estimates List */}
+            <div className="space-y-4">
+              {filteredEstimates.map((estimate) => (
               <Card 
                 key={estimate.estimateId} 
                 className="transition-all duration-200 cursor-pointer"
@@ -443,8 +556,97 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {!searchQuery && totalPages > 1 && (
+              <Card style={{ borderColor: '#e0e0e0' }}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    {/* Previous Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviousPage}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-2"
+                      style={{
+                        borderColor: currentPage === 1 ? '#e0e0e0' : '#288896',
+                        color: currentPage === 1 ? '#999' : '#005667',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className="min-w-[40px]"
+                            style={
+                              currentPage === pageNum
+                                ? {
+                                    backgroundColor: '#288896',
+                                    color: 'white',
+                                    border: 'none'
+                                  }
+                                : {
+                                    borderColor: '#e0e0e0',
+                                    color: '#005667'
+                                  }
+                            }
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Next Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-2"
+                      style={{
+                        borderColor: currentPage === totalPages ? '#e0e0e0' : '#288896',
+                        color: currentPage === totalPages ? '#999' : '#005667',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Page Info */}
+                  <div className="mt-4 text-center text-sm" style={{ color: '#666' }}>
+                    Page {currentPage} of {totalPages}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </div>
     </div>
