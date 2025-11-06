@@ -80,16 +80,6 @@ export default function AlarmPage() {
         }
       };
 
-      // Debug logging
-      console.log('=== DEBUG: handleAddToQuote payload ===');
-      console.log('formData:', formData);
-      console.log('productType:', productType);
-      console.log('context:', context);
-      console.log('selectedAddons:', selectedAddons);
-      console.log('estimatedTotal:', estimatedTotal);
-      console.log('cart:', payload.productContext.cart);
-      console.log('Full payload:', payload);
-
       // Create draft estimate
       const result = await createDraftDocument(payload, 'estimate');
       
@@ -107,7 +97,6 @@ export default function AlarmPage() {
         alert(`Failed to create estimate: ${result.error}`);
       }
     } catch (error) {
-      console.error('Failed to create estimate:', error);
       alert('Sorry, there was an error creating your estimate. Please try again.');
     } finally {
       setIsCreatingEstimate(false);
@@ -143,24 +132,14 @@ export default function AlarmPage() {
     };
     cart.push(baseProduct);
     
-    console.log('=== buildCartFromSelectedAddons Debug ===');
-    console.log('selectedAddons:', selectedAddons);
-    console.log('context:', context);
-    console.log('addonProducts available:', addonProducts.length);
-    
     // Add selected addons - use addonProducts (dynamic WooCommerce data) instead of staticAddons
     selectedAddons.forEach(selection => {
-      console.log(`Looking for addon: ${selection.id}`);
-      
       // First try to find in dynamic addon products (from WooCommerce)
       let addon = addonProducts.find(a => a.id === selection.id);
       
       // Fallback to static addons if not found in dynamic data
       if (!addon) {
         addon = staticAddons.find(a => a.id === selection.id);
-        console.log(`Addon ${selection.id} not found in dynamic data, using static:`, addon ? 'found' : 'not found');
-      } else {
-        console.log(`Found addon ${selection.id} in dynamic data:`, addon.name);
       }
       
       if (addon) {
@@ -172,21 +151,15 @@ export default function AlarmPage() {
           unitPrice = addon.unitPrice;
         }
         
-        console.log(`Adding ${addon.name} with price ${unitPrice} for context ${context}`);
-        
         cart.push({
           name: addon.name,
           qty: selection.quantity || selection.qty || 1,
           unitPrice: unitPrice, // Use the extracted price, not the object
           description: addon.summary || addon.description || ''
         });
-      } else {
-        console.warn(`Addon not found: ${selection.id}`);
       }
     });
     
-    console.log('Final cart:', cart);
-    console.log('=====================================');
     return cart;
   };
 

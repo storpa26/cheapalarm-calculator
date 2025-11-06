@@ -58,7 +58,6 @@ export function PhotoDropzone({ photos = [], onChange, compact = false, uploadSt
       }
       
     } catch (err) {
-      console.error('Error processing files:', err);
       setError('Error processing files. Please try again.');
     }
   };

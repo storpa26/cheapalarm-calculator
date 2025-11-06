@@ -37,8 +37,6 @@ let progressCallback = null;
  */
 export async function startUploadSession(estimateId, locationId) {
   try {
-    console.log('Starting upload session for estimate:', estimateId);
-    
     const response = await fetch(`${API_BASE}/wp-json/ca/v1/upload/start`, {
       method: 'POST',
       headers: {
@@ -68,11 +66,9 @@ export async function startUploadSession(estimateId, locationId) {
       status: 'active'
     };
 
-    console.log('Upload session started:', currentSession.id);
     return currentSession;
 
   } catch (error) {
-    console.error('Error starting upload session:', error);
     throw new Error(`Failed to start upload session: ${error.message}`);
   }
 }
@@ -116,11 +112,9 @@ export async function uploadPhoto(photo, category, deviceInfo = null) {
     // Upload with progress tracking
     const uploadResult = await uploadWithProgress(formData, photo.id);
     
-    console.log('Photo uploaded successfully:', photo.id);
     return uploadResult;
 
   } catch (error) {
-    console.error('Error uploading photo:', error);
     throw error;
   }
 }
@@ -137,8 +131,6 @@ export async function uploadPhotosBatch(photos, category, deviceInfo = null) {
     return [];
   }
 
-  console.log(`Starting batch upload of ${photos.length} photos for ${category}`);
-  
   const results = [];
   const uploadPromises = [];
   
@@ -157,7 +149,6 @@ export async function uploadPhotosBatch(photos, category, deviceInfo = null) {
         results.push({ photo, result, success: true });
         return result;
       } catch (error) {
-        console.error(`Failed to upload photo ${photo.id}:`, error);
         results.push({ photo, error, success: false });
         throw error;
       }

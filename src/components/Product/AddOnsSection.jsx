@@ -45,7 +45,6 @@ export function AddOnsSection({
       try {
         // Safety check - don't fetch if productType is invalid
         if (!productType) {
-          console.warn('⚠️ ProductType is undefined, skipping API call');
           return;
         }
         
@@ -81,7 +80,6 @@ export function AddOnsSection({
         onAddonProductsChange(allAddonProducts);
         setIsLoading(false);
       } catch (err) {
-        console.error('Failed to fetch addon products:', err);
         setError('Failed to fetch add-on products from WooCommerce. Please try again.');
         setIsLoading(false);
       }
@@ -301,7 +299,6 @@ export function AddOnsSection({
     );
 
     if (matchingVariation) {
-      console.log(`🛒 Found variation ${matchingVariation.id} for ${product.name}: ${context}`);
       return {
         variation_id: matchingVariation.id,
         variation: {
@@ -312,7 +309,6 @@ export function AddOnsSection({
 
     // Fallback: use first variation if no exact match
     const fallbackVariation = product.variations[0];
-    console.log(`🛒 Using fallback variation ${fallbackVariation.id} for ${product.name}`);
     return {
       variation_id: fallbackVariation.id,
       variation: fallbackVariation.attributes.reduce((acc, attr) => {
@@ -326,17 +322,12 @@ export function AddOnsSection({
     try {
       setIsAddingToCart(true);
       setError(null);
-
-      console.log('🛒 Starting cart operation...');
-      console.log('🛒 Selected addons:', selectedAddons);
-      console.log('🛒 Validation result:', validation);
       
       // Prepare items for WooCommerce cart
       const cartItems = [];
       
       // Add base product (always included)
       if (baseProduct) {
-        console.log('🛒 Adding base product:', baseProduct.id, baseProduct.name);
         cartItems.push({
           id: baseProduct.id,
           quantity: 1,
@@ -351,18 +342,11 @@ export function AddOnsSection({
       }
       
       // Add selected add-ons (user selections)
-      console.log('🛒 Processing selected add-ons:', selectedAddons);
-      console.log('🛒 Available addon products:', addonProducts.map(a => ({ id: a.id, name: a.name, isAutoAppended: a.isAutoAppended })));
-      console.log('🛒 WooCommerce product map:', Array.from(wooProductMap.entries()));
-      
       for (const selection of selectedAddons) {
-        console.log(`🛒 Processing selection: ${selection.id} x${selection.quantity}`);
         const addon = addonProducts.find(a => a.id === selection.id && !a.isAutoAppended);
-        console.log(`🛒 Found addon:`, addon ? { id: addon.id, name: addon.name, isAutoAppended: addon.isAutoAppended } : 'NOT FOUND');
         
         if (addon) {
           const wooProductId = wooProductMap.get(selection.id);
-          console.log(`🛒 Adding addon: ${addon.name} (Slug: ${selection.id} → WooCommerce ID: ${wooProductId})`);
           
           if (wooProductId) {
             // Find the original WooProduct for variation detection
@@ -387,26 +371,16 @@ export function AddOnsSection({
             }
             
             cartItems.push(cartItem);
-          } else {
-            console.warn(`⚠️ No WooCommerce product ID found for slug: ${selection.id}`);
           }
-        } else {
-          console.warn(`⚠️ Addon not found in products list: ${selection.id}`);
         }
       }
       
       // Add auto-appended items (system requirements)
-      console.log('🛒 Processing auto-appended items:', validation.autoAppendedItems);
-      
       for (const item of validation.autoAppendedItems) {
-        console.log(`🛒 Processing auto-required: ${item.id} x${item.quantity}`);
         const addon = addonProducts.find(a => a.id === item.id);
-        console.log(`🛒 Found auto-required addon:`, addon ? { id: addon.id, name: addon.name } : 'NOT FOUND');
         
         if (addon) {
           const wooProductId = wooProductMap.get(item.id);
-          console.log(`🛒 Adding auto-required: ${addon.name} (ID: ${item.id} → WooCommerce ID: ${wooProductId})`);
-          console.log(`🛒 Reason: ${item.reason}`);
           
           if (wooProductId) {
             cartItems.push({
@@ -419,15 +393,9 @@ export function AddOnsSection({
                 product_name: addon.name
               }
             });
-          } else {
-            console.warn(`⚠️ No WooCommerce product ID found for auto-required: ${item.id}; skipping dynamic-only flow`);
           }
-        } else {
-          console.warn(`⚠️ Auto-required addon not found: ${item.id}`);
         }
       }
-      
-      console.log('🛒 Final cart items to add:', cartItems);
       
       if (cartItems.length === 0) {
         throw new Error('No valid items to add to cart');
@@ -477,20 +445,15 @@ export function AddOnsSection({
           }
         };
 
-        console.log('🔧 Creating draft estimate in GoHighLevel...');
         const draftResult = await createDraftDocument(ghlPayload, 'estimate');
         
         if (draftResult.success) {
-          console.log('✅ Draft estimate created successfully:', draftResult.documentId);
           toast({
             title: "Draft Estimate Created",
             description: "Your quote has been prepared. Redirecting to cart...",
           });
-        } else {
-          console.warn('⚠️ Draft creation failed, continuing with cart redirect');
         }
       } catch (draftError) {
-        console.error('❌ Draft creation failed:', draftError);
         // Continue with cart redirect even if draft creation fails
       }
 
@@ -502,7 +465,6 @@ export function AddOnsSection({
       window.location.href = `${endpoint}&items=${encoded}`;
        
      } catch (err) {
-       console.error('❌ Cart operation failed:', err);
        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
        setError(`Failed to add items to cart: ${errorMessage}`);
        toast({

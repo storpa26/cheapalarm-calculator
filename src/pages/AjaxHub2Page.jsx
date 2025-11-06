@@ -32,12 +32,10 @@ export default function AjaxHub2Page() {
   const handleLeadSubmit = async (leadData) => {
     setIsSubmittingLead(true);
     try {
-      console.log('Lead submitted:', leadData);
       await new Promise(resolve => setTimeout(resolve, 2000));
       alert('Thank you! Your quote request has been submitted successfully.');
       setShowLeadForm(false);
     } catch (error) {
-      console.error('Failed to submit lead:', error);
       alert('Sorry, there was an error submitting your request. Please try again.');
     } finally {
       setIsSubmittingLead(false);

@@ -2,7 +2,7 @@
 export const useToast = () => {
   return {
     toast: ({ title, description, variant = 'default' }) => {
-      console.log(`Toast [${variant}]: ${title} - ${description}`);
+      // Toast notification (placeholder - implement actual toast UI if needed)
     }
   };
 };

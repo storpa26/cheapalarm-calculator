@@ -63,7 +63,6 @@ export default function QuotePage() {
         const isGuest = searchParams.get("guest") === "1";
         
         if (isLocalhost && !isGuest) {
-          console.log('Localhost detected - enabling admin mode without backend check');
           setIsAdmin(true);
           setIsCheckingAdmin(false);
           return;
@@ -72,9 +71,7 @@ export default function QuotePage() {
         // On production, check backend
         setIsCheckingAdmin(true);
         try {
-          console.log('Checking admin status...');
           const adminStatus = await checkAdminStatus();
-          console.log('Admin status result:', adminStatus);
           setIsAdmin(adminStatus);
           if (!adminStatus) {
             toast({
@@ -84,7 +81,6 @@ export default function QuotePage() {
             });
           }
         } catch (err) {
-          console.error('Error checking admin status:', err);
           setIsAdmin(false);
           toast({
             title: "Admin Check Failed",
@@ -115,7 +111,6 @@ export default function QuotePage() {
         setQuoteData(data);
         
       } catch (err) {
-        console.error('Error loading estimate:', err);
         setError(err instanceof Error ? err.message : "Failed to load estimate");
       } finally {
         setIsLoading(false);

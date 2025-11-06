@@ -78,8 +78,6 @@ export const createQuoteData = (data) => {
 // Check if current user is WordPress admin
 export async function checkAdminStatus() {
   try {
-    console.log('Fetching admin status from:', `${API_BASE}/wp-json/ca/v1/admin/check`);
-    
     // Try to get WordPress nonce if available
     const wpNonce = document.querySelector('meta[name="wp-rest-nonce"]')?.content || 
                     window.wpApiSettings?.nonce || 
@@ -92,9 +90,6 @@ export async function checkAdminStatus() {
     // Add nonce if available
     if (wpNonce) {
       headers['X-WP-Nonce'] = wpNonce;
-      console.log('Including WordPress nonce in request');
-    } else {
-      console.warn('⚠️ WordPress nonce not found - authentication may fail');
     }
     
     const response = await fetch(`${API_BASE}/wp-json/ca/v1/admin/check`, {
@@ -103,36 +98,13 @@ export async function checkAdminStatus() {
       headers: headers,
     });
     
-    console.log('Admin check response status:', response.status);
-    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Admin check failed:', response.status, errorText);
-      
-      // If endpoint doesn't exist (404), log a helpful message
-      if (response.status === 404) {
-        console.error('⚠️ Backend endpoint /wp-json/ca/v1/admin/check does not exist!');
-        console.error('⚠️ You need to add this endpoint to your WordPress plugin.');
-      }
-      
       return false;
     }
     
     const data = await response.json();
-    console.log('Admin check response data:', data);
-    
-    if (data.isAdmin === false) {
-      console.warn('⚠️ Backend says user is NOT admin.');
-      console.warn('⚠️ Possible causes:');
-      console.warn('   1. User is not logged into WordPress');
-      console.warn('   2. User does not have manage_options capability');
-      console.warn('   3. WordPress REST API authentication issue');
-      console.warn('⚠️ Check the PHP function ca_check_admin_status() in your plugin.');
-    }
-    
     return data.isAdmin === true;
   } catch (error) {
-    console.error("Error checking admin status:", error);
     return false;
   }
 }
@@ -157,22 +129,11 @@ export async function fetchEstimate(estimateId, locationId) {
     // Create quote data from API response
     const quoteData = createQuoteData(data);
     
-    // Debug: log item descriptions to see if photos are present
-    console.log('Item descriptions from API:');
-    quoteData.items.forEach((item, idx) => {
-      console.log(`Item ${idx + 1} (${item.name}):`, {
-        desc: item.desc,
-        hasImg: /<img\s/i.test(item.desc || ''),
-        descLength: item.desc?.length || 0
-      });
-    });
-    
     // Don't load saved photos from localStorage - always start fresh
     // Photos should be uploaded directly to server, not stored locally
     
     return quoteData;
   } catch (error) {
-    console.error("Error fetching estimate:", error);
     throw error;
   }
 }

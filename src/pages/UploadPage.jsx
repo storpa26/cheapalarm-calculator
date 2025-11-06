@@ -40,8 +40,6 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState([]);
   const [showUploadProgress, setShowUploadProgress] = useState(false);
 
-  console.log('UploadPage rendered with estimateId:', estimateId);
-
   // Early validation: require estimateId
   if (!estimateId) {
     return (
@@ -63,8 +61,6 @@ export default function UploadPage() {
 
   // Load quote data - run only once to prevent render loops
   useEffect(() => {
-    console.log('UploadPage useEffect running - one time only');
-    
     async function loadEstimate() {
       try {
         setIsLoading(true);
@@ -75,7 +71,6 @@ export default function UploadPage() {
         setQuoteData(data);
         
       } catch (err) {
-        console.error('Error loading estimate:', err);
         setError(err instanceof Error ? err.message : "Failed to load estimate");
         
         // Show error toast
@@ -186,7 +181,6 @@ export default function UploadPage() {
           // Persist category/deviceInfo for mapping later
           result.forEach(r => uploadResults.push({ ...r, category, deviceInfo }));
         } catch (error) {
-          console.error('Failed to upload photo:', photo.id, error);
           // Update progress to show failure
           setUploadProgress(prev => prev.map(p => 
             p.photoId === photo.id 
@@ -229,46 +223,28 @@ export default function UploadPage() {
 
       // Send mappings and apply to estimate
       const session = getCurrentSession();
-      console.log('Photo mappings to send:', JSON.stringify(uploads, null, 2));
-      console.log('Original quote items:', quoteData.items.map(i => ({ id: i.id, _id: i._id, name: i.name, sku: i.sku })));
-      console.log('Upload results count:', uploadResults.filter(r => r.success).length);
       
       if (uploads.length > 0) {
         try {
-          console.log('Calling mapPhotosToEstimate...');
           const mapResult = await mapPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session?.token, uploads);
-          console.log('Map photos result:', mapResult);
           
           if (!mapResult.ok) {
             throw new Error('Failed to map photos: ' + (mapResult.error || 'Unknown error'));
           }
           
-          console.log('Calling applyPhotosToEstimate...');
           // Note: token is optional for apply-photos, backend doesn't require it
           const applyResult = await applyPhotosToEstimate(quoteData.quoteId, locationId || TEST_LOCATION_ID, session?.token);
-          console.log('Apply photos result:', applyResult);
           
           if (!applyResult.ok) {
             throw new Error('Failed to apply photos: ' + (applyResult.error || 'Unknown error'));
           }
-          
-          console.log('✅ Photos successfully mapped and applied to estimate items');
         } catch (error) {
-          console.error('❌ Error mapping/applying photos:', error);
-          console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            uploadsLength: uploads.length,
-            hasToken: !!session?.token
-          });
           toast({
             title: "Warning",
             description: `Photos uploaded but may not have been applied to items: ${error.message}. Please refresh the quote page or try applying manually.`,
             variant: "default",
           });
         }
-      } else {
-        console.warn('No uploads to map:', { uploadsLength: uploads.length });
       }
 
       // Complete upload session (client-side cleanup)
@@ -303,7 +279,6 @@ export default function UploadPage() {
       navigate(`/quote?${params.toString()}`);
       
     } catch (error) {
-      console.error("Submit error:", error);
       toast({
         title: "Submission failed",
         description: error instanceof Error ? error.message : "Failed to submit photos. Please try again.",

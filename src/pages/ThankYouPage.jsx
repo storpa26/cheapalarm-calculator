@@ -46,7 +46,6 @@ export default function ThankYouPage() {
         setQuoteData(data);
         
       } catch (err) {
-        console.error('Error loading estimate:', err);
         // Set quoteData to null to show error state
         setQuoteData(null);
       } finally {

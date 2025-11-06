@@ -181,12 +181,11 @@ async function upsertContact(payload) {
     if (searchResp.ok) {
       const searchResult = await searchResp.json();
       if (searchResult.contact && searchResult.contact.id) {
-        console.log('Found existing contact:', searchResult.contact.id);
         return { success: true, contactId: searchResult.contact.id };
       }
     }
   } catch (searchErr) {
-    console.warn('Contact search failed, proceeding with creation:', searchErr.message);
+    // Continue with contact creation
   }
 
   const contactData = {
@@ -245,8 +244,6 @@ async function upsertContact(payload) {
     if (!resp.ok) {
       // If it's a duplicate contact error, try to find the existing contact
       if (resp.status === 400 && (text.includes('duplicate') || text.includes('already exists'))) {
-        console.log('Duplicate contact detected, attempting to find existing contact...');
-        
         // Try alternative search methods
         try {
           const searchByEmailResp = await fetch(`https://services.leadconnectorhq.com/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(payload.email)}`, {
@@ -263,13 +260,12 @@ async function upsertContact(payload) {
             if (searchData.contacts && searchData.contacts.length > 0) {
               const existingContact = searchData.contacts.find(c => c.email === payload.email);
               if (existingContact) {
-                console.log('Found existing contact via search:', existingContact.id);
                 return { success: true, contactId: existingContact.id };
               }
             }
           }
         } catch (fallbackErr) {
-          console.warn('Fallback contact search failed:', fallbackErr.message);
+          // Continue with error handling
         }
       }
 
@@ -415,25 +411,15 @@ async function createDocument(contactId, payload, docType) {
  * Maps cart items to GHL line items format
  */
 function mapCartToLineItems(cart, context) {
-  console.log('=== mapCartToLineItems Debug ===');
-  console.log('Input cart:', cart);
-  console.log('Context:', context);
-  
   const lineItems = [];
 
   for (const item of cart) {
-    console.log('Processing item:', item);
-    
     // Handle unit price - could be object with context or simple number
     let unitPrice = 0;
     if (typeof item.unitPrice === 'object' && item.unitPrice !== null && item.unitPrice[context]) {
       unitPrice = item.unitPrice[context];
-      console.log(`Using context price for ${item.name}: ${unitPrice} (from ${context})`);
     } else if (typeof item.unitPrice === 'number') {
       unitPrice = item.unitPrice;
-      console.log(`Using direct price for ${item.name}: ${unitPrice}`);
-    } else {
-      console.warn(`No valid price found for ${item.name}. unitPrice:`, item.unitPrice);
     }
 
     const lineItem = {
@@ -446,7 +432,6 @@ function mapCartToLineItems(cart, context) {
       currency: 'USD'
     };
 
-    console.log(`Created line item for ${item.name}:`, lineItem);
     lineItems.push(lineItem);
   }
 
@@ -454,12 +439,8 @@ function mapCartToLineItems(cart, context) {
   const totalBeforeDiscount = lineItems.reduce((sum, item) => sum + (item.amount * item.qty), 0);
   const targetTotal = cart.find(item => item.targetTotal)?.targetTotal;
   
-  console.log('Total before discount (dollars):', totalBeforeDiscount);
-  console.log('Target total:', targetTotal);
-  
   if (targetTotal && targetTotal < totalBeforeDiscount) {
     const discountAmount = totalBeforeDiscount - targetTotal;
-    console.log('Adding discount line item:', discountAmount);
     lineItems.push({
       name: 'Discount',
       description: 'Applied discount to reach target price',
@@ -471,8 +452,6 @@ function mapCartToLineItems(cart, context) {
     });
   }
 
-  console.log('Final line items:', lineItems);
-  console.log('================================');
   return lineItems;
 }
 

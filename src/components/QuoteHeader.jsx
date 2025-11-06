@@ -11,16 +11,13 @@ export function QuoteHeader({ quoteId, locationId, showPhotoButton = true }) {
   // Navigate to upload page with query parameters
   const handleUploadClick = (e) => {
     e.preventDefault();
-    console.log('Upload button clicked');
     try {
       const params = new URLSearchParams();
       if (quoteId) params.append('estimateId', quoteId);
       if (locationId) params.append('locationId', locationId);
       const url = `/upload?${params.toString()}`;
-      console.log('Navigating to:', url);
       navigate(url);
     } catch (error) {
-      console.error('Navigation error:', error);
       // Fallback to window.location
       const params = new URLSearchParams();
       if (quoteId) params.append('estimateId', quoteId);
@@ -32,16 +29,13 @@ export function QuoteHeader({ quoteId, locationId, showPhotoButton = true }) {
   // Navigate to quote page with query parameters
   const handleQuoteClick = (e) => {
     e.preventDefault();
-    console.log('Quote button clicked');
     try {
       const params = new URLSearchParams();
       if (quoteId) params.append('estimateId', quoteId);
       if (locationId) params.append('locationId', locationId);
       const url = `/quote?${params.toString()}`;
-      console.log('Navigating to:', url);
       navigate(url);
     } catch (error) {
-      console.error('Navigation error:', error);
       // Fallback to window.location
       const params = new URLSearchParams();
       if (quoteId) params.append('estimateId', quoteId);

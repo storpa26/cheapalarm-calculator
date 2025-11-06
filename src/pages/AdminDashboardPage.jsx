@@ -50,29 +50,21 @@ export default function AdminDashboardPage() {
                            window.location.hostname === '';
         
         if (isLocalhost) {
-          console.log('🔧 Localhost detected - bypassing admin mode check for testing');
           setIsAuthorized(true);
-          console.log('✅ Admin access granted (localhost bypass)');
         } else if (window.caAdminMode === true) {
           // Only check if window.caAdminMode is set
-          console.log('🔒 Verifying admin status...');
           const isAdmin = await checkAdminStatus();
           setIsAuthorized(isAdmin);
           
           if (!isAdmin) {
             setError('Access Denied - You must be logged in as a WordPress administrator to access this page.');
-            console.error('🚫 Admin access denied - user is not authorized');
-          } else {
-            console.log('✅ Admin access granted');
           }
         } else {
           // Not in admin mode, don't render
           setIsAuthorized(false);
           setError('This page is only accessible from WordPress admin.');
-          console.error('🚫 Admin mode not enabled - window.caAdminMode is not set');
         }
       } catch (err) {
-        console.error('Error verifying admin status:', err);
         setIsAuthorized(false);
         setError('Failed to verify admin status. Please refresh the page.');
       } finally {
@@ -107,24 +99,15 @@ export default function AdminDashboardPage() {
         
         const data = await response.json();
         
-        console.log('📥 API Response:', {
-          ok: data.ok,
-          itemsCount: data.items?.length,
-          total: data.total,
-          fullResponse: data
-        });
-        
         if (data.ok && Array.isArray(data.items)) {
           setAllEstimates(data.items);
           // Use total from backend if provided, otherwise use items length
           setTotalCount(data.total !== undefined ? data.total : data.items.length);
-          console.log('📊 Total estimates count:', data.total !== undefined ? data.total : data.items.length);
         } else {
           setAllEstimates([]);
           setTotalCount(0);
         }
       } catch (err) {
-        console.error('Error fetching estimates:', err);
         setError(err.message);
         setAllEstimates([]);
         setTotalCount(0);
@@ -142,17 +125,6 @@ export default function AdminDashboardPage() {
     const endIndex = startIndex + pageSize;
     const paginatedEstimates = allEstimates.slice(startIndex, endIndex);
     setEstimates(paginatedEstimates);
-    
-    console.log('📄 Pagination:', {
-      currentPage,
-      pageSize,
-      startIndex,
-      endIndex,
-      totalItems: allEstimates.length,
-      paginatedCount: paginatedEstimates.length,
-      firstItemId: paginatedEstimates[0]?.estimateId,
-      lastItemId: paginatedEstimates[paginatedEstimates.length - 1]?.estimateId
-    });
   }, [allEstimates, currentPage, pageSize]);
 
   // Filter estimates based on search query (client-side filtering)
