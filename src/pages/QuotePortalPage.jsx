@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card'
 import { Badge } from '../shared/ui/badge'
 import { Button } from '../shared/ui/button'
 import { Skeleton } from '../shared/ui/skeleton'
 import { formatCurrency } from '../shared/lib/quote'
 import { useQuotePortal } from '../hooks/useQuotePortal'
+import { usePortalDashboard } from '../hooks/usePortalDashboard'
 import { useToast } from '../hooks/use-toast'
 
 const STATUS_COLORS = {
@@ -105,35 +106,57 @@ function DocumentList({ documents }) {
 
 export default function QuotePortalPage() {
   const searchParams = new URLSearchParams(window.location.search)
-  const estimateId = searchParams.get('estimateId') || window.caEstimateId || null
-  const locationId = searchParams.get('locationId') || window.caLocationId || null
+  const initialEstimateId = searchParams.get('estimateId') || window.caEstimateId || null
+  const initialLocationId = searchParams.get('locationId') || window.caLocationId || null
   const { toast } = useToast()
 
-  const { data, error, isLoading, isRefreshing, actions } = useQuotePortal({ estimateId, locationId })
+  const {
+    data: dashboard,
+    error: dashboardError,
+    isLoading: isDashboardLoading,
+    isRefreshing: isDashboardRefreshing,
+    refresh: refreshDashboard
+  } = usePortalDashboard()
 
-  if (!estimateId) {
-    return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center px-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>Quote not found</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              We could not determine which quote to show. Please use the secure link from your email or contact support.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const [activeEstimateId, setActiveEstimateId] = useState(initialEstimateId)
+
+  useEffect(() => {
+    if (!initialEstimateId && dashboard?.estimates?.length) {
+      setActiveEstimateId(dashboard.estimates[0].estimateId)
+    }
+  }, [initialEstimateId, dashboard])
+
+  const activeEstimate = useMemo(
+    () => (dashboard?.estimates || []).find((item) => item.estimateId === activeEstimateId) || null,
+    [dashboard, activeEstimateId]
+  )
+
+  const effectiveLocationId = initialLocationId || activeEstimate?.locationId || null
+
+  const { data, error, isLoading, isRefreshing, actions } = useQuotePortal({
+    estimateId: activeEstimateId,
+    locationId: effectiveLocationId
+  })
+
+  const quote = data?.quote
+  const photos = data?.photos
+  const installation = data?.installation
+  const documents = data?.documents
+  const account = data?.account
+
+  const accountPortalUrl = account?.portalUrl || activeEstimate?.portalUrl || null
+  const accountLastInviteAt = account?.lastInviteAt || activeEstimate?.lastInviteAt || null
+  const accountResetUrl = account?.resetUrl || activeEstimate?.resetUrl || null
 
   const handleRefresh = async () => {
     try {
-      await actions.refresh()
+      await Promise.all([
+        refreshDashboard(),
+        actions.refresh()
+      ])
       toast({
         title: 'Portal refreshed',
-        description: 'Latest quote information loaded.'
+        description: 'Latest information loaded.'
       })
     } catch (err) {
       toast({
@@ -160,20 +183,16 @@ export default function QuotePortalPage() {
     actions.scheduleInstallation()
   }
 
-  const quote = data?.quote
-  const photos = data?.photos
-  const installation = data?.installation
-  const documents = data?.documents
-  const account = data?.account
+  const noEstimates = !isDashboardLoading && (!dashboard?.estimates || dashboard.estimates.length === 0)
 
   return (
     <div className="min-h-screen bg-muted/20 pb-24">
       <header className="bg-white border-b">
-        <div className="container mx-auto max-w-5xl px-4 py-6">
+        <div className="container mx-auto max-w-6xl px-4 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wide">Secure portal access</p>
-              <h1 className="text-3xl font-bold mt-1">Your Quote Portal</h1>
+              <h1 className="text-3xl font-bold mt-1">Your Client Portal</h1>
             </div>
 
             <div className="flex items-center gap-2">
@@ -183,150 +202,243 @@ export default function QuotePortalPage() {
               {quote?.number ? (
                 <Badge variant="outline" className="font-semibold">{`#${quote.number}`}</Badge>
               ) : null}
-              <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing || isLoading}>
-                {isRefreshing ? 'Refreshing…' : 'Refresh'}
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={isRefreshing || isLoading || isDashboardRefreshing || isDashboardLoading}
+              >
+                {isRefreshing || isDashboardRefreshing ? 'Refreshing…' : 'Refresh'}
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto max-w-5xl px-4 py-8 space-y-6">
-        {error ? (
+      <main className="container mx-auto max-w-6xl px-4 py-8 space-y-6">
+        {dashboardError ? (
           <Card className="border-red-200 bg-red-50">
             <CardHeader>
               <CardTitle className="text-red-700">We ran into an issue loading your portal</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-red-700">
-              <p>{error}</p>
-              <Button variant="destructive" onClick={actions.refresh}>
+              <p>{dashboardError}</p>
+              <Button variant="destructive" onClick={() => refreshDashboard()}>
                 Try again
               </Button>
             </CardContent>
           </Card>
         ) : null}
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <Card>
+        {error ? (
+          <Card className="border-red-200 bg-red-50">
             <CardHeader>
-              <CardTitle>Customer Account</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Portal access activates automatically when your agreement is accepted.
-              </p>
+              <CardTitle className="text-red-700">We ran into an issue loading quote details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <StatusBadge label={account?.statusLabel || 'Invite pending'} status={account?.status} />
-                    <p className="text-sm text-muted-foreground">
-                      {account?.status === 'active'
-                        ? 'Customer can access the portal.'
-                        : 'Send or resend an invite after the estimate is accepted.'}
-                    </p>
-                  </div>
-                  {account?.portalUrl ? (
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs uppercase text-muted-foreground">Portal link</p>
-                      <a
-                        href={account.portalUrl}
-                        className="mt-1 break-all text-sm font-medium text-primary hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
+            <CardContent className="space-y-4 text-red-700">
+              <p>{error}</p>
+              <Button variant="destructive" onClick={() => actions.refresh()}>
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {noEstimates ? (
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle>No quotes yet</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-muted-foreground">
+              <p>We don’t have any quotes linked to your account yet. Once you accept a quote, it will appear here.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <section className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle>Your quotes &amp; orders</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Select a quote to view details, documents, and installation progress.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {isDashboardLoading ? (
+                  Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)
+                ) : (
+                  (dashboard?.estimates || []).map((item) => {
+                    const isActive = item.estimateId === activeEstimateId
+                    return (
+                      <button
+                        key={item.estimateId}
+                        type="button"
+                        onClick={() => setActiveEstimateId(item.estimateId)}
+                        className={`w-full rounded-lg border px-4 py-3 text-left transition ${
+                          isActive ? 'border-primary bg-primary/5' : 'hover:border-primary/60'
+                        }`}
                       >
-                        {account.portalUrl}
-                      </a>
-                    </div>
-                  ) : null}
-                  {account?.lastInviteAt ? (
-                    <p className="text-xs text-muted-foreground">
-                      Last invite sent at {new Date(account.lastInviteAt).toLocaleString()}
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-semibold">{item.number || item.estimateId}</span>
+                          <StatusBadge label={item.statusLabel} status={item.status} />
+                        </div>
+                        {item.acceptedAt ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Accepted {new Date(item.acceptedAt).toLocaleDateString()}
+                          </p>
+                        ) : null}
+                      </button>
+                    )
+                  })
+                )}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>Your Quote</CardTitle>
-                <p className="text-sm text-muted-foreground">Review the system configuration and total.</p>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-48 w-full" />
+            <div className="space-y-6">
+              {!activeEstimateId ? (
+                <Card className="border-dashed">
+                  <CardHeader>
+                    <CardTitle>Select a quote</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Choose a quote from the list on the left to view its details, upload photos, or download documents.
+                  </CardContent>
+                </Card>
               ) : (
-                <QuoteTotals quote={quote} />
-              )}
-            </CardContent>
-          </Card>
+                <section className="grid gap-6 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Customer Account</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Portal access activates automatically when your agreement is accepted.
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {isLoading ? (
+                        <Skeleton className="h-32 w-full" />
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <StatusBadge label={account?.statusLabel || 'Invite pending'} status={account?.status} />
+                            <p className="text-sm text-muted-foreground">
+                              {account?.status === 'active'
+                                ? 'Customer can access the portal.'
+                                : 'We will email an invite as soon as your agreement is accepted.'}
+                            </p>
+                          </div>
+                          {accountPortalUrl ? (
+                            <div className="rounded-lg border p-3">
+                              <p className="text-xs uppercase text-muted-foreground">Portal link</p>
+                              <a
+                                href={accountPortalUrl}
+                                className="mt-1 break-all text-sm font-medium text-primary hover:underline"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {accountPortalUrl}
+                              </a>
+                            </div>
+                          ) : null}
+                          {accountResetUrl ? (
+                            <div className="rounded-lg border p-3 bg-muted/40">
+                              <p className="text-xs uppercase text-muted-foreground">Password reset link</p>
+                              <a
+                                href={accountResetUrl}
+                                className="mt-1 break-all text-sm font-medium text-primary hover:underline"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {accountResetUrl}
+                              </a>
+                            </div>
+                          ) : null}
+                          {accountLastInviteAt ? (
+                            <p className="text-xs text-muted-foreground">
+                              Last invite sent at {new Date(accountLastInviteAt).toLocaleString()}
+                            </p>
+                          ) : null}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>Submitted Photos</CardTitle>
-                <p className="text-sm text-muted-foreground">We use these to fine-tune installation planning.</p>
-              </div>
-              <Button variant="outline" onClick={handleUploadMore} disabled={isLoading}>
-                Add more
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <Skeleton className="h-48 w-full" />
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{photos?.total || 0} photos</Badge>
-                    {photos?.missingCount ? (
-                      <Badge variant="destructive">{photos.missingCount} still needed</Badge>
-                    ) : null}
-                  </div>
-                  <PhotoGrid photos={photos} />
-                </>
-              )}
-            </CardContent>
-          </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Your Quote</CardTitle>
+                      <p className="text-sm text-muted-foreground">Review the system configuration and total.</p>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? <Skeleton className="h-48 w-full" /> : <QuoteTotals quote={quote} />}
+                    </CardContent>
+                  </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>Installation</CardTitle>
-                <p className="text-sm text-muted-foreground">Scheduling opens after you approve the quote.</p>
-              </div>
-              <Button variant="outline" onClick={handleScheduleInstall} disabled={isLoading || installation?.canSchedule === false}>
-                {installation?.status === 'scheduled' ? 'View schedule' : 'Schedule install'}
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <div className="space-y-2">
-                  <StatusBadge label={installation?.statusLabel || 'Not scheduled'} status={installation?.status} />
-                  <p className="text-sm text-muted-foreground">
-                    {installation?.message || 'You can schedule your installation once the quote is accepted.'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-start justify-between">
+                      <div>
+                        <CardTitle>Submitted Photos</CardTitle>
+                        <p className="text-sm text-muted-foreground">We use these to fine-tune installation planning.</p>
+                      </div>
+                      <Button variant="outline" onClick={handleUploadMore} disabled={isLoading}>
+                        Add more
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {isLoading ? (
+                        <Skeleton className="h-48 w-full" />
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary">{photos?.total || 0} photos</Badge>
+                            {photos?.missingCount ? (
+                              <Badge variant="destructive">{photos.missingCount} still needed</Badge>
+                            ) : null}
+                          </div>
+                          <PhotoGrid photos={photos} />
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-              <p className="text-sm text-muted-foreground">Download your paperwork anytime.</p>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? <Skeleton className="h-32 w-full" /> : <DocumentList documents={documents} />}
-            </CardContent>
-          </Card>
-        </section>
+                  <Card>
+                    <CardHeader className="flex flex-row items-start justify-between">
+                      <div>
+                        <CardTitle>Installation</CardTitle>
+                        <p className="text-sm text-muted-foreground">Scheduling opens after you approve the quote.</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={handleScheduleInstall}
+                        disabled={isLoading || installation?.canSchedule === false}
+                      >
+                        {installation?.status === 'scheduled' ? 'View schedule' : 'Schedule install'}
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {isLoading ? (
+                        <Skeleton className="h-32 w-full" />
+                      ) : (
+                        <div className="space-y-2">
+                          <StatusBadge label={installation?.statusLabel || 'Not scheduled'} status={installation?.status} />
+                          <p className="text-sm text-muted-foreground">
+                            {installation?.message || 'You can schedule your installation once the quote is accepted.'}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Documents</CardTitle>
+                      <p className="text-sm text-muted-foreground">Download your paperwork anytime.</p>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? <Skeleton className="h-32 w-full" /> : <DocumentList documents={documents} />}
+                    </CardContent>
+                  </Card>
+                </section>
+              )}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   )

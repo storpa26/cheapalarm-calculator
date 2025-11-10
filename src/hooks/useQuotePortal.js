@@ -113,9 +113,10 @@ export function useQuotePortal({ estimateId, locationId }) {
   const loadData = useCallback(
     async (options = { silent: false }) => {
       if (!estimateId) {
-        setError('Missing estimate identifier.')
+        setError(null)
         setData(INITIAL_STATE)
         setIsLoading(false)
+        setIsRefreshing(false)
         return
       }
 
