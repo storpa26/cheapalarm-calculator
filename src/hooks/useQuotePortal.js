@@ -10,29 +10,6 @@ const INITIAL_STATE = {
   meta: {}
 }
 
-async function provisionPortalAccount(estimateId, locationId) {
-  try {
-    const response = await fetch(`${API_BASE}/wp-json/ca/v1/portal/create-account`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        estimateId,
-        locationId: locationId || TEST_LOCATION_ID
-      })
-    })
-
-    if (!response.ok) {
-      const body = await response.text()
-      throw new Error(body || 'Failed to provision account.')
-    }
-
-    return await response.json().catch(() => ({}))
-  } catch (error) {
-    throw (error instanceof Error ? error : new Error('Failed to provision account.'))
-  }
-}
-
 async function fetchPortalSnapshot(estimateId, locationId) {
   try {
     const params = new URLSearchParams({
@@ -132,8 +109,6 @@ export function useQuotePortal({ estimateId, locationId }) {
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(estimateId))
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isAccepting, setIsAccepting] = useState(false)
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false)
 
   const loadData = useCallback(
     async (options = { silent: false }) => {
@@ -189,67 +164,6 @@ export function useQuotePortal({ estimateId, locationId }) {
     loadData()
   }, [loadData])
 
-  const acceptEstimate = useCallback(async () => {
-    if (!estimateId) return
-    setIsAccepting(true)
-    try {
-      setError(null)
-      const response = await fetch(`${API_BASE}/wp-json/ca/v1/portal/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          estimateId,
-          locationId: locationId || TEST_LOCATION_ID
-        })
-      })
-
-      if (!response.ok) {
-        const body = await response.text()
-        throw new Error(body || 'Failed to accept estimate.')
-      }
-
-      const acceptPayload = await response.json().catch(() => ({}))
-      let accountPayload = null
-      let accountError = null
-
-      try {
-        accountPayload = await provisionPortalAccount(estimateId, locationId)
-      } catch (err) {
-        accountError = err instanceof Error ? err : new Error('Failed to provision account.')
-      }
-
-      await loadData({ silent: true })
-
-      return {
-        accept: acceptPayload,
-        account: accountPayload,
-        accountError
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to accept estimate.')
-      throw err
-    } finally {
-      setIsAccepting(false)
-    }
-  }, [estimateId, locationId, loadData])
-
-  const createAccount = useCallback(async () => {
-    if (!estimateId) return null
-    setIsCreatingAccount(true)
-    try {
-      setError(null)
-      const payload = await provisionPortalAccount(estimateId, locationId)
-      await loadData({ silent: true })
-      return payload
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to provision account.')
-      throw err
-    } finally {
-      setIsCreatingAccount(false)
-    }
-  }, [estimateId, locationId, loadData])
-
   const uploadMorePhotos = useCallback(() => {
     const params = new URLSearchParams()
     if (estimateId) params.set('estimateId', estimateId)
@@ -270,17 +184,17 @@ export function useQuotePortal({ estimateId, locationId }) {
       error,
       isLoading,
       isRefreshing,
-      isAccepting,
-      isCreatingAccount,
+      isAccepting: false,
+      isCreatingAccount: false,
       actions: {
         refresh: () => loadData({ silent: true }),
-        acceptEstimate,
-        createAccount,
+        acceptEstimate: async () => {},
+        createAccount: async () => {},
         uploadMorePhotos,
         scheduleInstallation
       }
     }),
-    [data, error, isLoading, isRefreshing, isAccepting, isCreatingAccount, loadData, acceptEstimate, createAccount, uploadMorePhotos, scheduleInstallation]
+    [data, error, isLoading, isRefreshing, loadData, uploadMorePhotos, scheduleInstallation]
   )
 
   return state

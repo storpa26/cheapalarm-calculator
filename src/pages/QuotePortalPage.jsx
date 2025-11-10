@@ -109,15 +109,7 @@ export default function QuotePortalPage() {
   const locationId = searchParams.get('locationId') || window.caLocationId || null
   const { toast } = useToast()
 
-  const {
-    data,
-    error,
-    isLoading,
-    isRefreshing,
-    isAccepting,
-    isCreatingAccount,
-    actions
-  } = useQuotePortal({ estimateId, locationId })
+  const { data, error, isLoading, isRefreshing, actions } = useQuotePortal({ estimateId, locationId })
 
   if (!estimateId) {
     return (
@@ -152,36 +144,6 @@ export default function QuotePortalPage() {
     }
   }
 
-  const handleAccept = async () => {
-    try {
-      const result = await actions.acceptEstimate()
-
-      if (result?.accountError) {
-        toast({
-          title: 'Estimate accepted',
-          description: 'We received your approval, but setting up the portal account will need a manual follow-up.',
-          variant: 'default'
-        })
-        toast({
-          title: 'Account provisioning issue',
-          description: result.accountError.message ?? 'Please contact support so we can finish creating your account.',
-          variant: 'destructive'
-        })
-      } else {
-        toast({
-          title: 'Estimate accepted',
-          description: 'Thanks! We will send onboarding details shortly.'
-        })
-      }
-    } catch (err) {
-      toast({
-        title: 'Unable to accept estimate',
-        description: err instanceof Error ? err.message : 'Please try again or contact support.',
-        variant: 'destructive'
-      })
-    }
-  }
-
   const handleUploadMore = () => {
     toast({
       title: 'Opening upload portal',
@@ -196,29 +158,6 @@ export default function QuotePortalPage() {
       description: 'We will guide you to the scheduling flow.'
     })
     actions.scheduleInstallation()
-  }
-
-  const handleCreateAccount = async () => {
-    try {
-      const result = await actions.createAccount()
-      if (result?.account?.portalUrl) {
-        toast({
-          title: 'Portal invite sent',
-          description: 'A fresh invite link was emailed to the customer.'
-        })
-      } else {
-        toast({
-          title: 'Portal account created',
-          description: 'Account is active. Share the portal link with the customer.'
-        })
-      }
-    } catch (err) {
-      toast({
-        title: 'Unable to create account',
-        description: err instanceof Error ? err.message : 'Please try again shortly.',
-        variant: 'destructive'
-      })
-    }
   }
 
   const quote = data?.quote
@@ -269,20 +208,11 @@ export default function QuotePortalPage() {
 
         <section className="grid gap-6 md:grid-cols-2">
           <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>Customer Account</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Monitor the portal invite status and trigger manual provisioning.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleCreateAccount}
-                disabled={isCreatingAccount || quote?.status !== 'accepted' || account?.status === 'active'}
-              >
-                {account?.status === 'active' ? 'Active' : isCreatingAccount ? 'Creating…' : 'Create account'}
-              </Button>
+            <CardHeader>
+              <CardTitle>Customer Account</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Portal access activates automatically when your agreement is accepted.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoading ? (
@@ -326,9 +256,6 @@ export default function QuotePortalPage() {
                 <CardTitle>Your Quote</CardTitle>
                 <p className="text-sm text-muted-foreground">Review the system configuration and total.</p>
               </div>
-              <Button onClick={handleAccept} disabled={isAccepting || quote?.canAccept === false}>
-                {quote?.status === 'accepted' ? 'Accepted' : isAccepting ? 'Accepting…' : 'Accept estimate'}
-              </Button>
             </CardHeader>
             <CardContent>
               {isLoading ? (
