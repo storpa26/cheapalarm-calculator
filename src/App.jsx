@@ -6,6 +6,7 @@ import QuotePage from './pages/QuotePage'
 import UploadPage from './pages/UploadPage'
 import ThankYouPage from './pages/ThankYouPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import QuotePortalPage from './pages/QuotePortalPage'
 
 // Inner component to handle initial route navigation
 function AppRoutes() {
@@ -27,6 +28,7 @@ function AppRoutes() {
       <Route path="/quote" element={<QuotePage />} />
       <Route path="/upload" element={<UploadPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
+      <Route path="/portal" element={<QuotePortalPage />} />
       
       {/* Catch-all route to display AlarmPage for any other URL */}
       <Route path="*" element={<AlarmPage />} />
@@ -35,6 +37,15 @@ function AppRoutes() {
 }
 
 function App() {
+  // Portal mode: render client portal directly without React Router
+  if (window.caPortalMode === true) {
+    return (
+      <div className="cheap-alarms-app">
+        <QuotePortalPage />
+      </div>
+    )
+  }
+
   // If WordPress admin mode is enabled, render dashboard directly
   // This bypasses React Router routing issues with WordPress admin URLs
   if (window.caAdminMode === true) {

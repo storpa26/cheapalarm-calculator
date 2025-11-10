@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../shared/ui/card';
 import { Skeleton } from '../shared/ui/skeleton';
 import { Button } from '../shared/ui/button';
@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { API_BASE, checkAdminStatus } from '../lib/quoteStorage';
+import { useToast } from '../hooks/use-toast';
 
 // Admin Dashboard Page Component
 // Displays list of all estimates with search and filtering
@@ -28,6 +29,8 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { toast } = useToast();
+  const [inviteStatus, setInviteStatus] = useState({});
   
   // Pagination state - initialize from URL params if available
   const [currentPage, setCurrentPage] = useState(() => {
@@ -64,7 +67,7 @@ export default function AdminDashboardPage() {
           setIsAuthorized(false);
           setError('This page is only accessible from WordPress admin.');
         }
-      } catch (err) {
+      } catch {
         setIsAuthorized(false);
         setError('Failed to verify admin status. Please refresh the page.');
       } finally {
@@ -78,46 +81,48 @@ export default function AdminDashboardPage() {
   // Store all estimates for client-side pagination
   const [allEstimates, setAllEstimates] = useState([]);
 
-  // Fetch all estimates once (only on mount or when authorized changes)
-  useEffect(() => {
-    if (!isAuthorized) return; // Don't fetch if not authorized
-    
-    async function fetchAllEstimates() {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Fetch all estimates (backend doesn't support offset, so we'll do client-side pagination)
-        const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/list?limit=1000`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch estimates: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.ok && Array.isArray(data.items)) {
-          setAllEstimates(data.items);
-          // Use total from backend if provided, otherwise use items length
-          setTotalCount(data.total !== undefined ? data.total : data.items.length);
-        } else {
-          setAllEstimates([]);
-          setTotalCount(0);
-        }
-      } catch (err) {
-        setError(err.message);
+  const fetchAllEstimates = useCallback(async () => {
+    if (!isAuthorized) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_BASE}/wp-json/ca/v1/estimate/list?limit=1000`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch estimates: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.ok && Array.isArray(data.items)) {
+        const normalizedItems = data.items.map((item) => ({
+          ...item,
+          portal: item.portal || {}
+        }));
+        setAllEstimates(normalizedItems);
+        setTotalCount(data.total !== undefined ? data.total : normalizedItems.length);
+      } else {
         setAllEstimates([]);
         setTotalCount(0);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      setError(err.message);
+      setAllEstimates([]);
+      setTotalCount(0);
+    } finally {
+      setIsLoading(false);
     }
-    
-    fetchAllEstimates();
   }, [isAuthorized]);
+
+  // Fetch all estimates once (only on mount or when authorized changes)
+  useEffect(() => {
+    fetchAllEstimates();
+  }, [fetchAllEstimates]);
   
   // Client-side pagination: slice allEstimates based on currentPage
   useEffect(() => {
@@ -190,6 +195,45 @@ export default function AdminDashboardPage() {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleResendInvite = async (event, estimate) => {
+    event.stopPropagation();
+    if (!estimate?.estimateId) return;
+
+    const estimateId = estimate.estimateId;
+    setInviteStatus((prev) => ({ ...prev, [estimateId]: 'loading' }));
+
+    try {
+      const response = await fetch(`${API_BASE}/wp-json/ca/v1/portal/resend-invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          estimateId,
+          locationId: estimate.locationId
+        })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || 'Failed to resend invite.');
+      }
+
+      toast({
+        title: 'Portal invite sent',
+        description: `A new invite was emailed to ${estimate.contact?.email || 'the customer'}.`
+      });
+      await fetchAllEstimates();
+    } catch (err) {
+      toast({
+        title: 'Failed to resend invite',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setInviteStatus((prev) => ({ ...prev, [estimateId]: 'idle' }));
     }
   };
 
@@ -442,7 +486,20 @@ export default function AdminDashboardPage() {
           <>
             {/* Estimates List */}
             <div className="space-y-4">
-              {filteredEstimates.map((estimate) => (
+              {filteredEstimates.map((estimate) => {
+              const portal = estimate.portal || {};
+              const portalQuote = portal.quote || {};
+              const portalStatus = (portalQuote.status || '').toLowerCase() || (estimate.status || '').toLowerCase();
+              const isPortalAccepted = portalStatus === 'accepted' || portalStatus === 'approved';
+              const portalStatusLabel = portalQuote.statusLabel || (isPortalAccepted ? 'Accepted' : 'Awaiting acceptance');
+              const account = portal.account || {};
+              const accountStatus = (account.status || '').toLowerCase();
+              const isAccountActive = accountStatus === 'active' || accountStatus === 'created';
+              const accountStatusLabel = account.statusLabel || (isAccountActive ? 'Account active' : 'Invite pending');
+              const canResendInvite = account.canResend !== false;
+              const isSendingInvite = inviteStatus[estimate.estimateId] === 'loading';
+
+              return (
               <Card 
                 key={estimate.estimateId} 
                 className="transition-all duration-200 cursor-pointer"
@@ -503,6 +560,49 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
+                      {/* Portal & Account */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <div className="px-3 py-3 rounded-lg border" style={{ borderColor: '#e0e0e0', backgroundColor: '#f9fbfb' }}>
+                          <p className="text-xs uppercase font-semibold" style={{ color: '#666' }}>Portal Status</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm font-semibold" style={{ color: '#005667' }}>{portalStatusLabel}</span>
+                            {portalQuote.acceptedAt ? (
+                              <span className="text-xs" style={{ color: '#999' }}>Accepted {formatDate(portalQuote.acceptedAt)}</span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="px-3 py-3 rounded-lg border space-y-2" style={{ borderColor: '#e0e0e0', backgroundColor: '#fffaf5' }}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs uppercase font-semibold" style={{ color: '#666' }}>Portal Account</p>
+                              <span className="text-sm font-semibold" style={{ color: '#c95375' }}>{accountStatusLabel}</span>
+                            </div>
+                            {canResendInvite ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(event) => handleResendInvite(event, estimate)}
+                                disabled={isSendingInvite}
+                                className="text-xs font-semibold"
+                                style={{
+                                  borderColor: '#c95375',
+                                  color: '#c95375',
+                                  backgroundColor: isSendingInvite ? '#fce8ef' : 'white'
+                                }}
+                              >
+                                {isSendingInvite ? 'Sending…' : 'Resend invite'}
+                              </Button>
+                            ) : null}
+                          </div>
+                          {account.lastInviteAt ? (
+                            <p className="text-xs" style={{ color: '#999' }}>
+                              Last invite: {formatDate(account.lastInviteAt)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
                       {/* Action Button */}
                       <div className="pt-2">
                         <Button 
@@ -519,6 +619,10 @@ export default function AdminDashboardPage() {
                           onMouseLeave={(e) => {
                             e.currentTarget.style.backgroundColor = '#288896';
                           }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleEstimateClick(estimate.estimateId, estimate.locationId);
+                          }}
                         >
                           <ExternalLink className="w-4 h-4 mr-2" />
                           View & Edit Estimate
@@ -528,7 +632,8 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-              ))}
+              )
+              })}
             </div>
 
             {/* Pagination Controls */}

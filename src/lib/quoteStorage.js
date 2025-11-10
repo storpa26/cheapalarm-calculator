@@ -2,7 +2,9 @@
 // Handles fetching quotes from WordPress API and managing local storage
 
 // API configuration
-export const API_BASE = "https://cheapalarms.com.au";
+const envApiBase = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.trim() : ''
+const windowApiBase = typeof window !== 'undefined' && window.CA_API_BASE_URL ? String(window.CA_API_BASE_URL).trim() : ''
+export const API_BASE = envApiBase || windowApiBase || "https://cheapalarms.com.au";
 export const TEST_LOCATION_ID = "aLTXtdwNknfmEFo3WBIX";
 
 // Quote item structure
