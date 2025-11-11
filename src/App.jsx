@@ -7,6 +7,7 @@ import UploadPage from './pages/UploadPage'
 import ThankYouPage from './pages/ThankYouPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import QuotePortalPage from './pages/QuotePortalPage'
+import PortalDemoPage from './pages/PortalDemoPage'
 
 // Inner component to handle initial route navigation
 function AppRoutes() {
@@ -29,6 +30,7 @@ function AppRoutes() {
       <Route path="/upload" element={<UploadPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
       <Route path="/portal" element={<QuotePortalPage />} />
+      <Route path="/portal-demo" element={<PortalDemoPage />} />
       
       {/* Catch-all route to display AlarmPage for any other URL */}
       <Route path="*" element={<AlarmPage />} />
