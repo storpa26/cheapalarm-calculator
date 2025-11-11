@@ -108,6 +108,7 @@ export default function QuotePortalPage() {
   const searchParams = new URLSearchParams(window.location.search)
   const initialEstimateId = searchParams.get('estimateId') || window.caEstimateId || null
   const initialLocationId = searchParams.get('locationId') || window.caLocationId || null
+  const initialInviteToken = searchParams.get('inviteToken') || window.caPortalInviteToken || null
   const { toast } = useToast()
 
   const {
@@ -135,7 +136,8 @@ export default function QuotePortalPage() {
 
   const { data, error, isLoading, isRefreshing, actions } = useQuotePortal({
     estimateId: activeEstimateId,
-    locationId: effectiveLocationId
+    locationId: effectiveLocationId,
+    inviteToken: initialInviteToken
   })
 
   const quote = data?.quote

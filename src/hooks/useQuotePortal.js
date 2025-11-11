@@ -10,15 +10,26 @@ const INITIAL_STATE = {
   meta: {}
 }
 
-async function fetchPortalSnapshot(estimateId, locationId) {
+async function fetchPortalSnapshot(estimateId, locationId, inviteToken) {
   try {
     const params = new URLSearchParams({
       estimateId,
       locationId: locationId || TEST_LOCATION_ID
     })
+    if (inviteToken) {
+      params.set('inviteToken', inviteToken)
+    }
+
+    const nonce =
+      typeof window !== 'undefined'
+        ? window.wpApiSettings?.nonce ||
+          document.querySelector('meta[name="wp-rest-nonce"]')?.content ||
+          undefined
+        : undefined
 
     const response = await fetch(`${API_BASE}/wp-json/ca/v1/portal/status?${params.toString()}`, {
-      credentials: 'include'
+      credentials: 'include',
+      headers: nonce ? { 'X-WP-Nonce': nonce } : undefined
     })
 
     if (!response.ok) {
@@ -27,8 +38,10 @@ async function fetchPortalSnapshot(estimateId, locationId) {
 
     const payload = await response.json()
     return payload?.ok === false ? null : payload
-  } catch (error) {
-    // Silently fallback to client-side derived data
+  } catch (err) {
+    if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+      console.debug('Failed to fetch portal snapshot', err)
+    }
     return null
   }
 }
@@ -104,7 +117,7 @@ function deriveAccountData(portalSnapshot) {
   }
 }
 
-export function useQuotePortal({ estimateId, locationId }) {
+export function useQuotePortal({ estimateId, locationId, inviteToken }) {
   const [data, setData] = useState(INITIAL_STATE)
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(estimateId))
@@ -130,7 +143,7 @@ export function useQuotePortal({ estimateId, locationId }) {
         setError(null)
         const [estimateData, portalSnapshot] = await Promise.all([
           fetchEstimate(estimateId, locationId || TEST_LOCATION_ID),
-          fetchPortalSnapshot(estimateId, locationId)
+          fetchPortalSnapshot(estimateId, locationId, inviteToken)
         ])
 
         const quote = deriveQuoteData(estimateData, portalSnapshot)
@@ -158,7 +171,7 @@ export function useQuotePortal({ estimateId, locationId }) {
         setIsRefreshing(false)
       }
     },
-    [estimateId, locationId]
+    [estimateId, locationId, inviteToken]
   )
 
   useEffect(() => {
