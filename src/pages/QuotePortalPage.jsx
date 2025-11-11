@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card'
 import { Badge } from '../shared/ui/badge'
 import { Button } from '../shared/ui/button'
@@ -109,6 +109,7 @@ export default function QuotePortalPage() {
   const initialEstimateId = searchParams.get('estimateId') || window.caEstimateId || null
   const initialLocationId = searchParams.get('locationId') || window.caLocationId || null
   const initialInviteToken = searchParams.get('inviteToken') || window.caPortalInviteToken || null
+  const hasCleanedUrlRef = useRef(false)
   const { toast } = useToast()
 
   const {
@@ -126,6 +127,34 @@ export default function QuotePortalPage() {
       setActiveEstimateId(dashboard.estimates[0].estimateId)
     }
   }, [initialEstimateId, dashboard])
+
+  useEffect(() => {
+    if (hasCleanedUrlRef.current) {
+      return
+    }
+    if (!dashboard?.estimates || dashboard.estimates.length === 0) {
+      return
+    }
+
+    try {
+      const url = new URL(window.location.href)
+      let changed = false
+      ;['estimateId', 'locationId', 'inviteToken'].forEach((key) => {
+        if (url.searchParams.has(key)) {
+          url.searchParams.delete(key)
+          changed = true
+        }
+      })
+      if (changed) {
+        const newSearch = url.searchParams.toString()
+        const nextUrl = `${url.pathname}${newSearch ? `?${newSearch}` : ''}${url.hash}`
+        window.history.replaceState({}, '', nextUrl)
+      }
+      hasCleanedUrlRef.current = true
+    } catch (err) {
+      // no-op
+    }
+  }, [dashboard])
 
   const activeEstimate = useMemo(
     () => (dashboard?.estimates || []).find((item) => item.estimateId === activeEstimateId) || null,
