@@ -86,12 +86,18 @@ export async function submitLeadToGHL(payload) {
     try { json = JSON.parse(text); } catch { json = null; }
 
     if (!resp.ok) {
+      if (resp.status === 400 && text.toLowerCase().includes('duplicate')) {
+        return { success: true, duplicate: true };
+      }
       const details = json?.error || json?.message || text || 'Unknown error';
       return { success: false, error: `GHL API failed: ${resp.status} - ${details}` };
     }
 
     return { success: true, data: json };
   } catch (err) {
+    if (err instanceof Error && err.message.toLowerCase().includes('duplicate')) {
+      return { success: true, duplicate: true };
+    }
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }

@@ -124,13 +124,17 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
       
       if (result.success) {
         setSubmitStatus('success');
-        const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
-        const message = isGHLDisabled 
-          ? '🔧 Development Mode: Form submitted successfully (GHL integration disabled)'
-          : '🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.';
-        setSubmitMessage(message);
-        // Call the original onSubmit for any additional handling
-        onSubmit(formData);
+        if (result.duplicate) {
+          setSubmitMessage('Looks like you’ve already reached out. We’ll pick up where we left off.');
+          onSubmit(formData);
+        } else {
+          const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
+          const message = isGHLDisabled
+            ? '🔧 Development Mode: Form submitted successfully (GHL integration disabled)'
+            : '🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.';
+          setSubmitMessage(message);
+          onSubmit(formData);
+        }
       } else {
         throw new Error('Failed to submit lead');
       }

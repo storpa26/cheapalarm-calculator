@@ -1,12 +1,12 @@
 {
   "src/lib/ghl-api.js": {
-    "file": "assets/ghl-api-DKgZ4NxE.js",
+    "file": "assets/ghl-api-DzpMV3Tw.js",
     "name": "ghl-api",
     "src": "src/lib/ghl-api.js",
     "isDynamicEntry": true
   },
   "src/main.jsx": {
-    "file": "assets/main-D99_88Wx.js",
+    "file": "assets/main-BVlsvmGx.js",
     "name": "main",
     "src": "src/main.jsx",
     "isEntry": true,
